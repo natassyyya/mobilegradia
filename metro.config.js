@@ -1,0 +1,11 @@
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
+
+const config = getDefaultConfig(__dirname);
+
+// Ensure ttf is resolved as an asset
+if (!config.resolver.assetExts.includes("ttf")) {
+  config.resolver.assetExts.push("ttf");
+}
+
+module.exports = withNativeWind(config, { input: "./src/global.css" });
