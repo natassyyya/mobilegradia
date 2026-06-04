@@ -18,7 +18,11 @@ export const authService = {
   verifyOtp: async (payload: { email: string; otp: string; purpose: string }) => {
     return await fetchJson('/auth/verifyOtp', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        email: payload.email,
+        otp_code: payload.otp,
+        action: payload.purpose,
+      }),
     });
   },
 

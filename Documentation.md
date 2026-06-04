@@ -233,3 +233,13 @@ Grup rute ini menggunakan **Tabs Navigator** untuk 5 fitur utama di bagian bawah
    - Merapikan struktur folder aset: Memindahkan file `bubble-1.png`, `bubble-2.png`, dan `logo-google.png` ke folder khusus `assets/images/login/` dan memperbarui jalur impornya.
    - Menghapus aset tidak terpakai (`bubble-3`, `bubble-4`, `react-logo`, `logo-glow`, dll.) serta file halaman default bawaan template yang tidak digunakan seperti `src/app/explore.tsx`.
 
+### [2026-06-04] — Integrasi Halaman Forgot Password
+1. **Implementasi Halaman Reset/Forgot Password**:
+   - Lokasi file: `src/app/(auth)/reset-password.tsx`.
+   - Merancang alur verifikasi multi-step yang terpadu: input email (kirim OTP), verifikasi OTP 6 digit dengan visual timer countdown & tombol resend, form input password baru dengan validasi rules dinamik (`PasswordRule` untuk panjang 8 karakter, huruf kapital, angka, karakter khusus), serta layar penyelesaian sukses.
+   - Mengadaptasi layout visual web persis 100% menggunakan NativeWind: background gelembung (`bubble-1.png` & `bubble-2.png`), logo Gradia (font Genos), judul (font Montserrat), dan isi input (font Inter).
+2. **Penyelarasan Payload API Otentikasi**:
+   - Lokasi file: `src/services/auth.ts`.
+   - Memperbaiki pemetaan parameter `verifyOtp` dari `{ email, otp }` menjadi `{ email, otp_code: payload.otp, action: payload.purpose }` agar sesuai dengan parameter rute API serverless `/api/auth/verifyOtp`.
+
+
