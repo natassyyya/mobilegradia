@@ -299,6 +299,11 @@ export default function LoginScreen() {
           
           {/* Google Sign-In WebView */}
           <WebView
+            userAgent={
+              Platform.OS === 'ios'
+                ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
+                : 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
+            }
             source={{ uri: googleAuthUrl }}
             onNavigationStateChange={(navState) => {
               // Intercept redirect to the backend website login URL
