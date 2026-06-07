@@ -268,5 +268,20 @@ Grup rute ini menggunakan **Tabs Navigator** untuk 5 fitur utama di bagian bawah
    - Menginstal dependensi `lucide-react-native` secara resmi ke dalam proyek mobile.
    - Melakukan casting type `'as any'` pada rute `router.replace('/(app)/dashboard')` untuk mencegah error validasi rute statis di Expo Router sebelum halaman dashboard utama diimplementasikan.
 
+### [2026-06-07] — Integrasi Halaman Courses (Penjadwalan Kuliah)
+1. **Penyelarasan Tampilan & Fitur Frontend Persis 100% dengan Web**:
+   - Membangun layar daftar kuliah `Mobile/src/app/(app)/courses/index.tsx` dengan visual layout dan data flow sama persis dengan web mobile layout (`Tab.jsx` & `Card.jsx`).
+   - Menyertakan header "Courses", deskripsi sub-heading, input search bar untuk memfilter daftar mata kuliah, dan button "Add Course" bergradasi ungu gelap.
+   - Mengelompokkan mata kuliah per hari (Senin s.d. Jumat) dengan badge indicator count jumlah mata kuliah per hari menggunakan badge berlatar belakang `#FDE047` transparan dengan teks kuning (`#FDE047`), persis visual web.
+   - Kartu mata kuliah menampilkan durasi waktu (format `HH:MM`), dot indikator SKS (Merah untuk 3 SKS, Kuning untuk 2 SKS, Cyan/Blue untuk 1 SKS), judul matakuliah beserta alias, nama ruangan (Room), dan nama dosen pengampu (Lecturer).
+   - Mengintegrasikan modal overlay slide-up interaktif untuk form penambahan dan detail/edit mata kuliah. Di dalamnya terdapat field nama matakuliah, alias, nama dosen, nomor telepon (disertai tombol pintasan untuk WhatsApp), hari, waktu mulai/selesai, ruangan, link kelas (disertai tombol pintasan untuk buka link eksternal), serta segmentasi jumlah SKS (1, 2, atau 3 SKS) yang di-highlight dinamis sesuai warnanya.
+2. **Koneksi Real Backend (Direct Supabase SDK)**:
+   - Terintegrasi langsung dengan database Supabase Cloud menggunakan modul API bawaan mobile `Mobile/src/api/coursesApi.ts` (`getCourses`, `createCourse`, `updateCourse`, `deleteCourse`) dengan filter ID workspace aktif.
+   - Menghubungkan fungsi aksi simpan, ubah, dan hapus ke client-side SDK Supabase secara asinkron lengkap dengan loading spinner dan toast alert (success/destructive) dari `useAlert()`.
+3. **Pembaruan Navigasi Alur Masuk**:
+   - Memperbarui rute redirect di `workspaces/index.tsx` setelah pengguna memilih workspace aktif untuk langsung diarahkan ke halaman `/courses` (karena halaman dashboard belum diimplementasikan).
+
+
+
 
 

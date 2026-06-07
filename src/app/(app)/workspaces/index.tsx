@@ -6,17 +6,14 @@ import { MoreVertical, Pencil, Trash2, ArrowRightCircle, Plus, Check, X, AlertTr
 import { ScreenContainer } from '../../../components/layout/screen-container';
 import { useAuth } from '../../../hooks/use-auth';
 import { useWorkspace } from '../../../hooks/use-workspace';
-import { workspaceService } from '../../../services/workspaces';
+import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace } from '../../../api/workspacesApi';
 
 export default function WorkspaceScreen() {
   const { user } = useAuth();
   const { setActiveWorkspace } = useWorkspace();
   const router = useRouter();
 
-  const [workspaces, setWorkspaces] = useState<any[]>([
-    { id_workspace: 1, name: 'Personal Workspace' },
-    { id_workspace: 2, name: 'Gradia Workspace' },
-  ]);
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [addMode, setAddMode] = useState(false);
@@ -35,12 +32,12 @@ export default function WorkspaceScreen() {
         return;
       }
       try {
-        const data = await workspaceService.getWorkspaces(user.id_user);
-        if (data && Array.isArray(data) && data.length > 0) {
+        const data = await getWorkspaces(user.id_user);
+        if (data && Array.isArray(data)) {
           setWorkspaces(data);
         }
       } catch (err) {
-        console.warn('API error loading workspaces, using mock data:', err);
+        console.warn('API error loading workspaces:', err);
       } finally {
         setLoading(false);
       }
@@ -65,25 +62,18 @@ export default function WorkspaceScreen() {
     setLoadingAdd(true);
     try {
       if (user) {
-        const result = await workspaceService.createWorkspace({
+        const data = await createWorkspace({
           id_user: user.id_user,
           name,
         });
-        if (result && result.data && result.data[0]) {
-          setWorkspaces((prev) => [...prev, result.data[0]]);
-        } else {
-          setWorkspaces((prev) => [...prev, { id_workspace: Date.now(), name }]);
+        if (data && data[0]) {
+          setWorkspaces((prev) => [...prev, data[0]]);
         }
-      } else {
-        setWorkspaces((prev) => [...prev, { id_workspace: Date.now(), name }]);
       }
       setAddMode(false);
       setAddText('');
     } catch (error) {
-      console.warn('Failed API workspace creation, inserting locally:', error);
-      setWorkspaces((prev) => [...prev, { id_workspace: Date.now(), name }]);
-      setAddMode(false);
-      setAddText('');
+      console.warn('Failed to create workspace on Supabase:', error);
     } finally {
       setLoadingAdd(false);
     }
@@ -95,20 +85,13 @@ export default function WorkspaceScreen() {
     if (!name) return;
     setLoadingAdd(true);
     try {
-      await workspaceService.updateWorkspace({
-        id_workspace,
-        name,
-      });
+      await updateWorkspace(id_workspace, { name });
       setWorkspaces((prev) =>
         prev.map((w) => (w.id_workspace === id_workspace ? { ...w, name } : w))
       );
       setEditMode(null);
     } catch (error) {
-      console.warn('Failed API workspace update, updating locally:', error);
-      setWorkspaces((prev) =>
-        prev.map((w) => (w.id_workspace === id_workspace ? { ...w, name } : w))
-      );
-      setEditMode(null);
+      console.warn('Failed to update workspace on Supabase:', error);
     } finally {
       setLoadingAdd(false);
     }
@@ -119,19 +102,14 @@ export default function WorkspaceScreen() {
     if (!selectedWorkspace) return;
     setLoadingAdd(true);
     try {
-      await workspaceService.deleteWorkspace(selectedWorkspace.id_workspace);
+      await deleteWorkspace(selectedWorkspace.id_workspace);
       setWorkspaces((prev) =>
         prev.filter((w) => w.id_workspace !== selectedWorkspace.id_workspace)
       );
       setShowDeleteAlert(false);
       setSelectedWorkspace(null);
     } catch (error) {
-      console.warn('Failed API workspace delete, deleting locally:', error);
-      setWorkspaces((prev) =>
-        prev.filter((w) => w.id_workspace !== selectedWorkspace.id_workspace)
-      );
-      setShowDeleteAlert(false);
-      setSelectedWorkspace(null);
+      console.warn('Failed to delete workspace on Supabase:', error);
     } finally {
       setLoadingAdd(false);
     }
@@ -140,8 +118,8 @@ export default function WorkspaceScreen() {
   // Enter workspace
   const enterWorkspace = async (idWorkspace: number, name: string) => {
     await setActiveWorkspace(idWorkspace, name);
-    // Navigates directly to App Dashboard
-    router.replace('/(app)/dashboard' as any);
+    // Navigates directly to App Courses
+    router.replace('/(app)/courses' as any);
   };
 
   return (
