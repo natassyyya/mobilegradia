@@ -15,7 +15,7 @@ export default function VerifyOtpScreen() {
     email = 'user@example.com', 
     expiredAt, 
     from = 'verification', 
-    purpose = 'register' 
+    purpose = 'registration' 
   } = useLocalSearchParams<{ email: string, expiredAt: string, from: string, purpose: string }>();
 
   const [otp, setOtp] = useState('');

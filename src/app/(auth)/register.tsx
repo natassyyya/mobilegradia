@@ -60,7 +60,7 @@ export default function RegisterScreen() {
           pathname: '/VerifyOtp' as any,
           params: { 
             email: email, 
-            purpose: 'register', 
+            purpose: res.purpose || 'registration', 
             from: 'verification',
             expiredAt: res.expires_at || new Date(Date.now() + 5 * 60000).toISOString()
           }
