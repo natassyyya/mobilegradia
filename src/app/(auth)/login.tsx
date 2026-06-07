@@ -35,7 +35,7 @@ export default function LoginScreen() {
           email: res.email || email,
         };
         await saveSession(userData);
-        router.replace('/dashboard' as any);
+        router.replace('/workspace' as any);
       } else {
         setErrorMsg(res.error || 'Login failed. Please check your credentials.');
       }
@@ -91,7 +91,7 @@ export default function LoginScreen() {
           email: callbackRes.email || '',
         };
         await saveSession(userData);
-        router.replace('/dashboard' as any);
+        router.replace('/workspace' as any);
       } else {
         throw new Error(callbackRes?.error || 'Gagal masuk menggunakan Google callback.');
       }
