@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, P
 import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
+import { useAuth } from '../../hooks/use-auth';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -10,6 +11,7 @@ export default function LoginScreen() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { login: performLogin } = useAuth();
 
   const handleLogin = () => {
     setErrorMsg('');
@@ -18,9 +20,15 @@ export default function LoginScreen() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.replace('/(app)/dashboard');
+    setTimeout(async () => {
+      try {
+        await performLogin({ id_user: 1, username: email.split('@')[0], email: email });
+        setLoading(false);
+        router.replace('/(app)/workspaces');
+      } catch (err: any) {
+        setErrorMsg(err.message || 'Login failed.');
+        setLoading(false);
+      }
     }, 1500);
   };
 
