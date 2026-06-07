@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, P
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
-import { authService } from '../../services/auth';
+import { sendResetOtp, verifyOtp, sendOtp, changePassword } from '../../api/auth';
 
 type Step = 'email' | 'otp' | 'newPw' | 'success';
 
@@ -105,7 +105,7 @@ export default function ResetPasswordScreen() {
 
     setLoading(true);
     try {
-      const res = await authService.resetPassword({ email, action: 'send-otp' });
+      const res = await sendResetOtp(email);
       if (res && !res.error) {
         setExpiredAt(res.expires_at || new Date(Date.now() + 5 * 60 * 1000).toISOString());
         setStep('otp');
@@ -130,11 +130,7 @@ export default function ResetPasswordScreen() {
 
     setLoading(true);
     try {
-      const res = await authService.verifyOtp({
-        email,
-        otp: code,
-        purpose: 'reset-password',
-      });
+      const res = await verifyOtp(email, code, 'reset-password');
 
       if (res && res.otp_verified) {
         setStep('newPw');
@@ -153,7 +149,7 @@ export default function ResetPasswordScreen() {
     setResending(true);
     setErrorMsg('');
     try {
-      const res = await authService.sendOtp({ email, purpose: 'reset-password' });
+      const res = await sendOtp(email, 'reset-password');
       if (res && res.expires_at) {
         setExpiredAt(res.expires_at);
         setOtp(['', '', '', '', '', '']);
@@ -190,11 +186,7 @@ export default function ResetPasswordScreen() {
 
     setLoading(true);
     try {
-      const res = await authService.resetPassword({
-        action: 'change-password',
-        email,
-        new_password: pass,
-      });
+      const res = await changePassword(email, pass);
 
       if (res && res.status === 'success') {
         setStep('success');

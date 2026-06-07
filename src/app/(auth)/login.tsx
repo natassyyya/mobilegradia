@@ -4,28 +4,104 @@ import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
 
+import { useAuth } from '../../hooks/use-auth';
+import { login, getGoogleAuthUrl, googleCallback } from '../../api/auth';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { login: saveSession } = useAuth();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setErrorMsg('');
     if (!email || !password) {
       setErrorMsg('Please fill all fields.');
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await login(email, password);
+      if (res && !res.error) {
+        // Simpan sesi user ke context global
+        const userData = res.user || res.data || {
+          id_user: res.id_user || 1,
+          username: res.username || email.split('@')[0],
+          email: res.email || email,
+        };
+        await saveSession(userData);
+        router.replace('/dashboard' as any);
+      } else {
+        setErrorMsg(res.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'An error occurred during login.');
+    } finally {
       setLoading(false);
-      router.replace('/(app)/dashboard');
-    }, 1500);
+    }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login clicked');
+  const handleGoogleLogin = async () => {
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      // 1. Dapatkan url sign-in google dari backend
+      const authUrlRes = await getGoogleAuthUrl();
+      if (!authUrlRes || authUrlRes.error || !authUrlRes.url) {
+        throw new Error(authUrlRes?.error || 'Gagal mengambil URL otentikasi Google dari backend.');
+      }
+
+      // 2. Tentukan redirectUrl yang dicocokkan di Supabase (sesuai setelan server.js backend)
+      const redirectUrl = "https://gradia-three.vercel.app/auth/login";
+
+      // 3. Buka browser session untuk Google Sign-In
+      const result = await WebBrowser.openAuthSessionAsync(authUrlRes.url, redirectUrl);
+
+      // 4. Periksa hasil redirect
+      if (result.type === 'success' && result.url) {
+        // Ambil parameter access_token dan refresh_token dari bagian hash URL (#access_token=...&refresh_token=...)
+        const hash = result.url.split('#')[1];
+        if (!hash) {
+          throw new Error('Format respon otentikasi tidak valid.');
+        }
+
+        const params = hash.split('&').reduce((acc: any, item) => {
+          const [key, val] = item.split('=');
+          acc[key] = decodeURIComponent(val);
+          return acc;
+        }, {});
+
+        const { access_token, refresh_token } = params;
+        if (!access_token) {
+          throw new Error('Access token tidak ditemukan.');
+        }
+
+        // 5. Kirim token ke backend callback.js untuk verifikasi & ambil data user dari database
+        const callbackRes = await googleCallback(access_token, refresh_token);
+        if (callbackRes && !callbackRes.error && callbackRes.id_user) {
+          // 6. Simpan sesi user ke global context dan masuk ke dashboard
+          const userData = {
+            id_user: callbackRes.id_user,
+            username: callbackRes.username || 'Google User',
+            email: callbackRes.email || '',
+          };
+          await saveSession(userData);
+          router.replace('/dashboard' as any);
+        } else {
+          throw new Error(callbackRes?.error || 'Gagal masuk menggunakan Google callback.');
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Terjadi kesalahan saat masuk dengan Google.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -171,7 +247,7 @@ export default function LoginScreen() {
               {/* Register Link */}
               <Text className="text-sm text-[#A3A3A3] font-inter">
                 Don't have an account?{' '}
-                <Link href="/(auth)/register" asChild>
+                <Link href={"/(auth)/register" as any} asChild>
                   <TouchableOpacity>
                     <Text className="underline text-[#9457FF] font-bold font-inter">Register Here</Text>
                   </TouchableOpacity>
