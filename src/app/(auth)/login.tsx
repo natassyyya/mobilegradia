@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ActivityIndicator, Modal, SafeAreaView } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
 
 import { useAuth } from '../../hooks/use-auth';
 import { login, getGoogleAuthUrl, googleCallback } from '../../api/auth';
-import * as WebBrowser from 'expo-web-browser';
-
-WebBrowser.maybeCompleteAuthSession();
+import { WebView } from 'react-native-webview';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -17,6 +15,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login: saveSession } = useAuth();
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleAuthUrl, setGoogleAuthUrl] = useState('');
 
   const handleLogin = async () => {
     setErrorMsg('');
@@ -50,55 +50,54 @@ export default function LoginScreen() {
     setErrorMsg('');
     setLoading(true);
     try {
-      // 1. Dapatkan url sign-in google dari backend
       const authUrlRes = await getGoogleAuthUrl();
       if (!authUrlRes || authUrlRes.error || !authUrlRes.url) {
         throw new Error(authUrlRes?.error || 'Gagal mengambil URL otentikasi Google dari backend.');
       }
+      setGoogleAuthUrl(authUrlRes.url);
+      setShowGoogleModal(true);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Terjadi kesalahan saat memulai login Google.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // 2. Tentukan redirectUrl yang dicocokkan di Supabase (sesuai setelan server.js backend)
-      const redirectUrl = "https://gradia-three.vercel.app/auth/login";
+  const handleGoogleCallback = async (url: string) => {
+    setLoading(true);
+    try {
+      const hash = url.split('#')[1];
+      if (!hash) {
+        throw new Error('Format respon otentikasi tidak valid.');
+      }
 
-      // 3. Buka browser session untuk Google Sign-In
-      const result = await WebBrowser.openAuthSessionAsync(authUrlRes.url, redirectUrl);
+      const params = hash.split('&').reduce((acc: any, item) => {
+        const [key, val] = item.split('=');
+        acc[key] = decodeURIComponent(val);
+        return acc;
+      }, {});
 
-      // 4. Periksa hasil redirect
-      if (result.type === 'success' && result.url) {
-        // Ambil parameter access_token dan refresh_token dari bagian hash URL (#access_token=...&refresh_token=...)
-        const hash = result.url.split('#')[1];
-        if (!hash) {
-          throw new Error('Format respon otentikasi tidak valid.');
-        }
+      const { access_token, refresh_token } = params;
+      if (!access_token) {
+        throw new Error('Access token tidak ditemukan.');
+      }
 
-        const params = hash.split('&').reduce((acc: any, item) => {
-          const [key, val] = item.split('=');
-          acc[key] = decodeURIComponent(val);
-          return acc;
-        }, {});
-
-        const { access_token, refresh_token } = params;
-        if (!access_token) {
-          throw new Error('Access token tidak ditemukan.');
-        }
-
-        // 5. Kirim token ke backend callback.js untuk verifikasi & ambil data user dari database
-        const callbackRes = await googleCallback(access_token, refresh_token);
-        if (callbackRes && !callbackRes.error && callbackRes.id_user) {
-          // 6. Simpan sesi user ke global context dan masuk ke dashboard
-          const userData = {
-            id_user: callbackRes.id_user,
-            username: callbackRes.username || 'Google User',
-            email: callbackRes.email || '',
-          };
-          await saveSession(userData);
-          router.replace('/dashboard' as any);
-        } else {
-          throw new Error(callbackRes?.error || 'Gagal masuk menggunakan Google callback.');
-        }
+      const callbackRes = await googleCallback(access_token, refresh_token);
+      if (callbackRes && !callbackRes.error && callbackRes.id_user) {
+        const userData = {
+          id_user: callbackRes.id_user,
+          username: callbackRes.username || 'Google User',
+          email: callbackRes.email || '',
+        };
+        await saveSession(userData);
+        router.replace('/dashboard' as any);
+      } else {
+        throw new Error(callbackRes?.error || 'Gagal masuk menggunakan Google callback.');
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Terjadi kesalahan saat masuk dengan Google.');
+      setErrorMsg(err.message || 'Terjadi kesalahan saat memproses data Google.');
     } finally {
       setLoading(false);
     }
@@ -279,6 +278,50 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Google Sign-In In-App WebView Modal */}
+      <Modal
+        visible={showGoogleModal}
+        animationType="slide"
+        onRequestClose={() => setShowGoogleModal(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
+          {/* Custom Header */}
+          <View className="flex-row items-center justify-between px-4 py-3 border-b border-white/10 bg-black">
+            <Text className="text-white text-lg font-bold font-inter">Google Sign-In</Text>
+            <TouchableOpacity 
+              onPress={() => setShowGoogleModal(false)}
+              className="px-3 py-1 bg-white/10 rounded-md"
+            >
+              <Text className="text-white font-inter text-sm">Close</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Google Sign-In WebView */}
+          <WebView
+            source={{ uri: googleAuthUrl }}
+            onNavigationStateChange={(navState) => {
+              // Intercept redirect to the backend website login URL
+              if (navState.url.includes('https://gradia-three.vercel.app/auth/login')) {
+                // Immediately close modal before displaying the web UI
+                setShowGoogleModal(false);
+                // Handle callback tokens exchange
+                handleGoogleCallback(navState.url);
+              }
+            }}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            renderLoading={() => (
+              <ActivityIndicator
+                color="#9457FF"
+                size="large"
+                style={styles.loadingOverlay}
+              />
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -290,5 +333,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.44,
     shadowRadius: 10.32,
     elevation: 16,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
