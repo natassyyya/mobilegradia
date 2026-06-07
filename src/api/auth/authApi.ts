@@ -72,6 +72,7 @@ export function verifyOtp(email: string, otp_code: string, action?: string) {
     email,
     otp_code,
     action,
+    purpose: action,
   });
 }
 
@@ -97,6 +98,7 @@ export function sendOtp(email: string, purpose: string) {
   return request("/sendOtp", {
     email,
     purpose,
+    action: purpose,
   });
 }
 
