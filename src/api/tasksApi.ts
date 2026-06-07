@@ -33,19 +33,20 @@ export async function getTasks(idWorkspace: number) {
 
 // CREATE TASK
 export async function createTask(task: any) {
-  console.log("[taskApi] Creating task:", task);
+  if (!task.id_course) {
+    throw new Error("id_course wajib diisi");
+  }
+
+  if (!task.id_workspace) {
+    throw new Error("id_workspace wajib diisi");
+  }
 
   const { data, error } = await supabase
     .from("task")
     .insert([task])
     .select();
 
-  if (error) {
-    console.error("[taskApi] createTask error:", error);
-    throw error;
-  }
-
-  console.log("[taskApi] Task created");
+  if (error) throw error;
 
   return data;
 }

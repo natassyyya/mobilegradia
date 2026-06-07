@@ -6,6 +6,7 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
+import { register as apiRegister } from '../../api/auth';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -52,28 +53,25 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      // Catatan: Di mobile app, pastikan URL API menggunakan alamat lengkap (contoh: https://gradia.com/api/auth) 
-      // karena path relatif "/api/auth" hanya berfungsi di Web.
-      /* const res = await fetch("https://YOUR-API-URL/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username, password, action: "register" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Registration failed");
-      */
-
-      // Simulasi loading API
-      setTimeout(() => {
-        setLoading(false);
+      const res = await apiRegister(username, email, password);
+      if (res && !res.error) {
         // Setelah sukses register, arahkan ke halaman verifikasi OTP
-        // router.push({ pathname: '/(auth)/verify-otp', params: { email: email } });
-        alert("Pura-puranya sukses kirim OTP!");
-      }, 1500);
-
+        router.push({
+          pathname: '/VerifyOtp' as any,
+          params: { 
+            email: email, 
+            purpose: res.purpose || 'registration', 
+            from: 'verification',
+            expiredAt: res.expires_at || new Date(Date.now() + 5 * 60000).toISOString()
+          }
+        });
+      } else {
+        setErrorMsg(res.error || 'Registration failed. Please try again.');
+      }
     } catch (err: any) {
       console.error("REGISTER ERROR:", err);
       setErrorMsg(err.message || "Something went wrong.");
+    } finally {
       setLoading(false);
     }
   };

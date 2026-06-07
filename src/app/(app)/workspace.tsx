@@ -72,10 +72,8 @@ export default function WorkspacesScreen() {
   };
 
   const enterWorkspace = (idWorkspace: string) => {
-    // Di mobile, kita tidak pakai sessionStorage. 
-    // Bisa pakai AsyncStorage (nanti), atau lempar via parameter router.
     console.log("Entering Workspace ID:", idWorkspace);
-    router.push('/(app)/dashboard'); 
+    router.push('/dashboard' as any); 
   };
 
   const closeAllMenus = () => {
