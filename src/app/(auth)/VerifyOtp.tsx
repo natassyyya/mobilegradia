@@ -6,6 +6,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
+import { verifyOtp, sendOtp } from '../../api/auth';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -63,20 +64,22 @@ export default function VerifyOtpScreen() {
 
     setLoading(true);
     try {
-      // Simulasi API Call
-      setTimeout(() => {
-        setLoading(false);
+      const res = await verifyOtp(email, otp, purpose);
+      if (res && !res.error && res.otp_verified) {
         if (from === 'login') {
-          router.replace('/dashboard' as any);
+          router.replace('/workspace' as any);
         } else if (from === 'verification') {
           alert('Verification Success!');
           router.replace('/login' as any);
         } else {
           router.push('/reset-password' as any);
         }
-      }, 1500);
+      } else {
+        setErrorMsg(res.error || 'Invalid OTP code. Please try again.');
+      }
     } catch (err: any) {
-      setErrorMsg('An error occurred while verifying OTP.');
+      setErrorMsg(err.message || 'An error occurred while verifying OTP.');
+    } finally {
       setLoading(false);
     }
   };
@@ -87,17 +90,18 @@ export default function VerifyOtpScreen() {
     setErrorMsg('');
 
     try {
-      // Simulasi API Resend
-      setTimeout(() => {
-        // Tambah waktu 5 menit dari sekarang
-        const newExpire = new Date(new Date().getTime() + 5 * 60000).toISOString();
+      const res = await sendOtp(email, purpose);
+      if (res && !res.error) {
+        const newExpire = res.expires_at || new Date(Date.now() + 5 * 60000).toISOString();
         setLocalExpiredAt(newExpire);
         setOtp('');
-        setResending(false);
         alert('New code has been sent to your email!');
-      }, 1500);
-    } catch (err) {
-      setErrorMsg('Failed to resend code. Please try again.');
+      } else {
+        setErrorMsg(res.error || 'Failed to resend code.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to resend code. Please try again.');
+    } finally {
       setResending(false);
     }
   };
