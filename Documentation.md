@@ -281,6 +281,18 @@ Grup rute ini menggunakan **Tabs Navigator** untuk 5 fitur utama di bagian bawah
 3. **Pembaruan Navigasi Alur Masuk**:
    - Memperbarui rute redirect di `workspaces/index.tsx` setelah pengguna memilih workspace aktif untuk langsung diarahkan ke halaman `/courses` (karena halaman dashboard belum diimplementasikan).
 
+### [2026-06-07] — Integrasi Halaman Presensi / Kehadiran
+1. **Implementasi Halaman Presensi (`Mobile/src/app/(app)/presences.tsx`)**:
+   - Membangun halaman presensi yang terintegrasi langsung dengan database Supabase Cloud menggunakan modul API `presencesApi` (`getPresences`, `createPresence`, `updatePresence`, `deletePresence`) dan `coursesApi` (`getCoursesToday`) berdasarkan filter ID workspace aktif.
+   - Menyertakan visual panel total kehadiran (Present vs Absent) dan slider horizontal jadwal mata kuliah hari ini (Courses Today) lengkap dengan penanda status kehadiran (Logged Presence).
+   - Menghubungkan log kehadiran ke tabel data riwayat presensi yang responsif dan dapat di-scroll horizontal secara halus di mobile, lengkap dengan fitur pencarian dan paginasi data.
+   - Menyediakan modal popup fungsional untuk mencatat kehadiran (Log Presence), mengubah catatan/status kehadiran (Edit Presence), serta opsi untuk menghapus log presensi langsung (Delete Presence).
+   - Menggunakan ikon vector modern `lucide-react-native` (Search, ChevronDown, X, Check, Menu, ArrowRightCircle, Clock, MapPin, Trash2) untuk konsistensi desain 100% dengan Web.
+2. **Penyelesaian Resolusi Modul & Kompilasi**:
+   - Menginstal ulang modul `lucide-react-native` ke dependensi resmi `package.json`.
+   - Memperbarui konfigurasi `Mobile/metro.config.js` untuk menambahkan ekstensi `.mjs` ke `sourceExts` agar bundler dapat membaca aset ikon Lucide dengan lancar.
+   - Menyelesaikan seluruh type checking compiler sehingga berhasil lulus uji compile build `npx tsc --noEmit` tanpa error (Exit code: 0).
+
 
 
 

@@ -118,8 +118,8 @@ export default function WorkspaceScreen() {
   // Enter workspace
   const enterWorkspace = async (idWorkspace: number, name: string) => {
     await setActiveWorkspace(idWorkspace, name);
-    // Navigates directly to App Courses
-    router.replace('/(app)/courses' as any);
+    // Navigates directly to App Dashboard
+    router.replace('/(app)/dashboard' as any);
   };
 
   return (
