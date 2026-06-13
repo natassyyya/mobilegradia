@@ -230,7 +230,7 @@ export default function PresencesScreen() {
             <Text className="text-2xl font-extrabold tracking-wider text-white font-genos">
               <Text className="text-[#9457FF]">GRA</Text>DIA
             </Text>
-            <TouchableOpacity onPress={() => router.push('/workspaces')}>
+            <TouchableOpacity onPress={() => router.push('/workspace' as any)}>
               <Menu size={24} color="#FAFAFA" />
             </TouchableOpacity>
           </View>
