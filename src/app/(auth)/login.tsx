@@ -26,7 +26,7 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const res = await login(email, password);
+      const res = await login(email, password) as any;
       if (res && !res.error) {
         // Simpan sesi user ke context global
         const userData = res.user || res.data || {
