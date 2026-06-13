@@ -343,8 +343,8 @@ export default function CoursesScreen() {
                             course.sks === 3
                               ? 'bg-[#F87171]'
                               : course.sks === 2
-                              ? 'bg-[#FDE047]'
-                              : 'bg-[#22D3EE]';
+                                ? 'bg-[#FDE047]'
+                                : 'bg-[#22D3EE]';
                           return (
                             <TouchableOpacity
                               key={course.id_courses}
@@ -363,14 +363,14 @@ export default function CoursesScreen() {
                               {/* Card Title & Alias */}
                               <Text className="font-bold text-white text-base font-inter">
                                 {course.name}{' '}
-                                {course.alias && (
+                                {!!course.alias && (
                                   <Text className="text-[#9457FF] uppercase">({course.alias})</Text>
                                 )}
                               </Text>
 
                               {/* Card Info Rows */}
                               <View className="flex-col gap-1.5 mt-1">
-                                {course.room && (
+                                {!!course.room && (
                                   <View className="flex-row items-center gap-2">
                                     <Building2 size={16} color="#643EB2" />
                                     <Text className="text-[#A3A3A3] text-sm font-inter uppercase">
@@ -378,7 +378,7 @@ export default function CoursesScreen() {
                                     </Text>
                                   </View>
                                 )}
-                                {course.lecturer && (
+                                {!!course.lecturer && (
                                   <View className="flex-row items-center gap-2">
                                     <GraduationCap size={16} color="#643EB2" />
                                     <Text className="text-[#A3A3A3] text-sm font-inter">
@@ -518,14 +518,12 @@ export default function CoursesScreen() {
                           key={day}
                           onPress={() => setFormDay(day)}
                           activeOpacity={0.8}
-                          className={`flex-1 items-center justify-center py-2.5 rounded-md ${
-                            isSelected ? 'bg-[#9457FF]' : 'bg-transparent'
-                          }`}
+                          className={`flex-1 items-center justify-center py-2.5 rounded-md ${isSelected ? 'bg-[#9457FF]' : 'bg-transparent'
+                            }`}
                         >
                           <Text
-                            className={`font-semibold text-xs font-inter ${
-                              isSelected ? 'text-white' : 'text-[#A3A3A3]'
-                            }`}
+                            className={`font-semibold text-xs font-inter ${isSelected ? 'text-white' : 'text-[#A3A3A3]'
+                              }`}
                           >
                             {shortDay}
                           </Text>

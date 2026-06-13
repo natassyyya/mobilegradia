@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, ScrollView, 
+import {
+  View, Text, TextInput, TouchableOpacity, ScrollView,
   KeyboardAvoidingView, Platform, Modal, ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  Search, ChevronDown, X, Check, Menu, 
-  ArrowRightCircle, Calendar, Clock, MapPin, Trash2
+import {
+  Search, ChevronDown, X, Check, Menu,
+  ArrowRightCircle, Calendar, Clock, MapPin, Trash2, LogOut
 } from 'lucide-react-native';
 import { ScreenContainer } from '../../../components/layout/screen-container';
 import { useWorkspace } from '../../../hooks/use-workspace';
@@ -21,13 +21,13 @@ export default function PresencesScreen() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState('');
-  
+
   const [courses, setCourses] = useState<any[]>([]);
   const [cLoading, setCLoading] = useState(true);
-  
+
   const [presences, setPresences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [popupMode, setPopupMode] = useState<'add' | 'edit' | null>(null);
   const [popupData, setPopupData] = useState<any>(null);
   const [note, setNote] = useState('');
@@ -41,10 +41,10 @@ export default function PresencesScreen() {
       setLoading(false);
       return;
     }
-    
+
     setCLoading(true);
     setLoading(true);
-    
+
     try {
       // 1. Fetch courses scheduled today
       const todayCourses = await getCoursesToday(activeWorkspaceId);
@@ -52,7 +52,7 @@ export default function PresencesScreen() {
 
       // 2. Fetch presence records
       const presenceList = await getPresences(activeWorkspaceId);
-      
+
       // format dates and times
       const formatted = (presenceList || []).map((item: any) => {
         const dateObj = new Date(item.presences_at);
@@ -159,7 +159,7 @@ export default function PresencesScreen() {
     try {
       if (popupMode === 'add') {
         await createPresence({
-          id_course: popupData.id_course,
+          id_course: popupData.id_courses || popupData.id_course,
           id_workspace: activeWorkspaceId,
           status: statusSelection,
           note: note.trim() || undefined
@@ -222,7 +222,7 @@ export default function PresencesScreen() {
     <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0 }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-          
+
           {/* Header Section */}
           <View className="w-full mb-6">
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', fontFamily: 'Montserrat-Bold' }}>Presences</Text>
@@ -234,15 +234,15 @@ export default function PresencesScreen() {
           {/* Stats Box */}
           <View className="w-full border border-[#2c2c2c]/50 rounded-[12px] p-4 mb-6 bg-[#141414]">
             <Text className="text-white font-semibold text-center text-[20px] mb-4 font-montserrat">Total Presence</Text>
-            
+
             <View className="flex-row justify-center items-center gap-8">
               <View className="items-center">
                 <Text className="text-[#22C55E] font-bold text-[32px] font-montserrat">{totalPresence}</Text>
                 <Text className="text-white font-inter text-[14px]">Present</Text>
               </View>
-              
+
               <View className="w-[1px] h-10 bg-[#2c2c2c]"></View>
-              
+
               <View className="items-center">
                 <Text className="text-[#EF4444] font-bold text-[32px] font-montserrat">{totalAbsent}</Text>
                 <Text className="text-white font-inter text-[14px]">Absent</Text>
@@ -260,39 +260,111 @@ export default function PresencesScreen() {
             ) : courses.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {courses.map((item, idx) => {
-                  const isAttended = attendedCourseIds.includes(item.id_course);
+                  const isAttended = attendedCourseIds.includes(item.id_courses);
+                  
+                  // Calculate course status dynamically based on current time
+                  const getCourseStatus = () => {
+                    if (!item.start || !item.end) {
+                      return { label: 'Not started', color: '#A3A3A3', dot: '#EF4444', bg: '#1c1917' };
+                    }
+                    
+                    const now = new Date();
+                    const [startH, startM] = item.start.split(':').map(Number);
+                    const [endH, endM] = item.end.split(':').map(Number);
+                    
+                    const startTime = new Date();
+                    startTime.setHours(startH, startM, 0);
+                    
+                    const endTime = new Date();
+                    endTime.setHours(endH, endM, 0);
+                    
+                    if (now < startTime) {
+                      return { label: 'Not started', color: '#A3A3A3', dot: '#F87171', bg: '#242426' };
+                    } else if (now >= startTime && now <= endTime) {
+                      return { label: 'On Going', color: '#FBBF24', dot: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' };
+                    } else {
+                      return { label: 'Ended', color: '#6B7280', dot: '#6B7280', bg: '#1F2022' };
+                    }
+                  };
+
+                  // SKS Color Indicator: 1 SKS = Green, 2 SKS = Yellow, 3 SKS = Red
+                  const getSksDotColor = (sksValue: number) => {
+                    const sks = Number(sksValue);
+                    if (sks === 1) return '#22C55E'; // Ijo
+                    if (sks === 2) return '#FDE047'; // Kuning
+                    if (sks === 3) return '#EF4444'; // Merah
+                    return '#22D3EE'; // Default Cyan
+                  };
+
+                  const statusInfo = getCourseStatus();
+
                   return (
                     <LinearGradient
-                       key={idx}
-                      colors={isAttended ? ['#0d0d0e', '#050505'] : ['#1a1230', '#141414']}
-                      className={`rounded-[12px] p-4 border border-[#464646]/50 mr-4 w-[269px] ${
-                        isAttended ? 'opacity-60' : ''
-                      }`}
+                      key={idx}
+                      colors={isAttended ? ['#0d0d0e', '#050505'] : ['#141414', '#141414']}
+                      style={{
+                        padding: 16,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(44, 44, 44, 0.5)',
+                        marginRight: 16,
+                        width: 269,
+                        opacity: isAttended ? 0.6 : 1
+                      }}
                     >
-                      <View className="flex-row items-center gap-[8px]">
-                        <Clock size={14} color={isAttended ? "#A3A3A3" : "#C084FC"} />
-                        <Text className="text-[#A3A3A3] font-inter text-[14px]">
-                          {item.start?.slice(0, 5)} - {item.end?.slice(0, 5)}
-                        </Text>
+                      {/* Top Header Row (SKS Dot + Time + Status Badge) */}
+                      <View className="flex-row items-center justify-between w-full">
+                        <View className="flex-row items-center gap-[8px]">
+                          <View
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: 4,
+                              backgroundColor: getSksDotColor(item.sks)
+                            }}
+                          />
+                          <Text className="text-[#A3A3A3] font-inter text-[14px]">
+                            {item.start?.slice(0, 5)} - {item.end?.slice(0, 5)}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={{
+                            backgroundColor: statusInfo.bg,
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 4
+                          }}
+                        >
+                          <Text
+                            style={{ color: statusInfo.color }}
+                            className="text-[12px] font-semibold font-inter"
+                          >
+                            {statusInfo.label}
+                          </Text>
+                        </View>
                       </View>
-                      
-                      <Text className="font-semibold text-white text-[18px] mt-3 font-montserrat" numberOfLines={2}>
+
+                      {/* Course Title */}
+                      <Text className="font-semibold text-white text-[18px] mt-4 font-montserrat" numberOfLines={2}>
                         {item.name}
                       </Text>
-                      
-                      <View className="flex-row items-center gap-1 mt-2">
-                        <MapPin size={13} color="#A3A3A3" />
-                        <Text className="text-[#A3A3A3] uppercase text-[12px] font-inter">{item.room}</Text>
-                      </View>
-                      
-                      <TouchableOpacity 
+
+                      {/* Room Subtitle */}
+                      <Text className="text-[#A3A3A3] text-[14px] mt-1 font-inter">
+                        {item.room || '-'}
+                      </Text>
+
+                      {/* Log Presence Button */}
+                      <TouchableOpacity
                         disabled={isAttended}
                         onPress={() => handleCardClick(item)}
-                        className={`mt-4 self-start flex-row items-center px-4 py-2.5 rounded-lg border ${
-                          isAttended 
-                            ? 'bg-transparent border-[#2c2c2c]' 
-                            : 'bg-[#9457FF]/80 border-[#9457FF]'
+                        className={`mt-4 self-start flex-row items-center px-4 py-2.5 rounded-lg ${
+                          isAttended
+                            ? 'bg-transparent border border-[#2c2c2c]'
+                            : 'bg-[#9457FF]/80'
                         }`}
+                        style={!isAttended ? { backgroundColor: '#3B0764' } : undefined}
                       >
                         <Text className="text-white text-[13px] font-semibold mr-2 font-inter">
                           {isAttended ? 'Logged Presence' : 'Log Presence'}
@@ -326,7 +398,7 @@ export default function PresencesScreen() {
           {/* Search bar */}
           <View className="w-full border border-[#2c2c2c] rounded-lg bg-transparent flex-row items-center px-3 py-2.5 mb-6">
             <Search size={18} color="#A3A3A3" />
-            <TextInput 
+            <TextInput
               value={search}
               onChangeText={(txt) => {
                 setSearch(txt);
@@ -341,10 +413,10 @@ export default function PresencesScreen() {
           {/* Table Control Header */}
           <View className="w-full flex-row justify-between items-center border-b border-[#2c2c2c]/50 pb-3 mb-3">
             <Text className="text-white font-semibold text-[18px] font-montserrat">Log Presence</Text>
-            
+
             <View className="flex-row items-center gap-2">
               <Text className="text-[#A3A3A3] text-[14px] font-inter">Showing</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={toggleRowsPerPage}
                 className="border border-[#2c2c2c] bg-[#141414] rounded-md px-3 py-1 flex-row items-center active:bg-zinc-800"
               >
@@ -358,7 +430,7 @@ export default function PresencesScreen() {
           <View className="w-full border border-[#2c2c2c] bg-[#141414] rounded-2xl p-2 mb-4">
             <ScrollView horizontal showsHorizontalScrollIndicator={true}>
               <View className="min-w-[620px]">
-                
+
                 <View className="flex-row border-b border-[#2c2c2c] pb-3 mb-2 px-2">
                   <Text className="text-white font-semibold text-[14px] w-[40px] text-center font-montserrat">No</Text>
                   <Text className="text-white font-semibold text-[14px] w-[100px] text-center font-montserrat">Date</Text>
@@ -377,8 +449,8 @@ export default function PresencesScreen() {
                     </View>
                   ) : (
                     currentPageData.map((row, idx) => (
-                      <TouchableOpacity 
-                        key={idx} 
+                      <TouchableOpacity
+                        key={idx}
                         onPress={() => handleRowClick(row)}
                         className="flex-row px-2 py-4 border-b border-[#2c2c2c]/40 items-center active:bg-zinc-900"
                       >
@@ -391,12 +463,10 @@ export default function PresencesScreen() {
                         </Text>
                         <Text className="text-[#A3A3A3] text-[14px] w-[80px] text-center font-inter">{row.time}</Text>
                         <View className="w-[100px] items-center justify-center">
-                          <View className={`px-2.5 py-1 rounded-full ${
-                            row.status === 'Present' ? 'bg-[#22C55E]/15' : 'bg-[#EF4444]/15'
-                          }`}>
-                            <Text className={`text-[12px] font-bold font-inter ${
-                              row.status === 'Present' ? 'text-[#4ADE80]' : 'text-[#F87171]'
+                          <View className={`px-2.5 py-1 rounded-full ${row.status === 'Present' ? 'bg-[#22C55E]/15' : 'bg-[#EF4444]/15'
                             }`}>
+                            <Text className={`text-[12px] font-bold font-inter ${row.status === 'Present' ? 'text-[#4ADE80]' : 'text-[#F87171]'
+                              }`}>
                               {row.status}
                             </Text>
                           </View>
@@ -414,26 +484,24 @@ export default function PresencesScreen() {
 
           {/* Pagination Buttons */}
           <View className="w-full flex-row justify-between items-center py-2 mt-2">
-            <TouchableOpacity 
+            <TouchableOpacity
               disabled={page === 1}
               onPress={() => setPage(p => Math.max(1, p - 1))}
-              className={`bg-[#141414] border border-[#2c2c2c] rounded px-4 py-2 ${
-                page === 1 ? 'opacity-40' : 'active:bg-zinc-800'
-              }`}
+              className={`bg-[#141414] border border-[#2c2c2c] rounded px-4 py-2 ${page === 1 ? 'opacity-40' : 'active:bg-zinc-800'
+                }`}
             >
               <Text className="text-white text-[14px] font-semibold font-inter">Previous</Text>
             </TouchableOpacity>
-            
+
             <Text className="text-[#A3A3A3] text-[14px] font-inter">
               Page {page} of {totalPages}
             </Text>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               disabled={page >= totalPages}
               onPress={() => setPage(p => Math.min(totalPages, p + 1))}
-              className={`bg-[#141414] border border-[#2c2c2c] rounded px-4 py-2 ${
-                page >= totalPages ? 'opacity-40' : 'active:bg-zinc-800'
-              }`}
+              className={`bg-[#141414] border border-[#2c2c2c] rounded px-4 py-2 ${page >= totalPages ? 'opacity-40' : 'active:bg-zinc-800'
+                }`}
             >
               <Text className="text-white text-[14px] font-semibold font-inter">Next</Text>
             </TouchableOpacity>
@@ -446,7 +514,7 @@ export default function PresencesScreen() {
       <Modal visible={popupMode !== null} transparent={true} animationType="fade" onRequestClose={handleClosePopup}>
         <View className="flex-1 bg-black/60 justify-center items-center">
           <View className="bg-[#15171A] border border-[#2c2c2c] w-[90%] max-w-[400px] rounded-2xl p-4">
-            
+
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-white font-semibold text-[18px] font-montserrat">
                 {popupMode === 'add' ? 'Log Presence' : 'Edit Presence'}
@@ -465,35 +533,31 @@ export default function PresencesScreen() {
               </Text>
 
               <View className="flex-row gap-3 mb-5">
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setStatusSelection('Present')}
-                  className={`flex-row items-center justify-center gap-2 px-4 py-2.5 rounded-lg border ${
-                    statusSelection === 'Present' 
-                      ? 'bg-[#22C55E]/15 border-[#22C55E]/30' 
+                  className={`flex-row items-center justify-center gap-2 px-4 py-2.5 rounded-lg border ${statusSelection === 'Present'
+                      ? 'bg-[#22C55E]/15 border-[#22C55E]/30'
                       : 'bg-[#1b1b1b] border-[#2c2c2c]'
-                  }`}
+                    }`}
                 >
-                  <Text className={`font-semibold font-inter ${
-                    statusSelection === 'Present' ? 'text-[#4ADE80]' : 'text-zinc-400'
-                  }`}>Present</Text>
+                  <Text className={`font-semibold font-inter ${statusSelection === 'Present' ? 'text-[#4ADE80]' : 'text-zinc-400'
+                    }`}>Present</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setStatusSelection('Absent')}
-                  className={`flex-row items-center justify-center gap-2 px-4 py-2.5 rounded-lg border ${
-                    statusSelection === 'Absent' 
-                      ? 'bg-[#EF4444]/15 border-[#EF4444]/30' 
+                  className={`flex-row items-center justify-center gap-2 px-4 py-2.5 rounded-lg border ${statusSelection === 'Absent'
+                      ? 'bg-[#EF4444]/15 border-[#EF4444]/30'
                       : 'bg-[#1b1b1b] border-[#2c2c2c]'
-                  }`}
+                    }`}
                 >
-                  <Text className={`font-semibold font-inter ${
-                    statusSelection === 'Absent' ? 'text-[#F87171]' : 'text-zinc-400'
-                  }`}>Absent</Text>
+                  <Text className={`font-semibold font-inter ${statusSelection === 'Absent' ? 'text-[#F87171]' : 'text-zinc-400'
+                    }`}>Absent</Text>
                 </TouchableOpacity>
               </View>
 
               <Text className="text-[#A3A3A3] text-[14px] mb-2 font-inter font-medium">Add Notes</Text>
-              <TextInput 
+              <TextInput
                 value={note}
                 onChangeText={setNote}
                 placeholder="Type notes..."
@@ -516,21 +580,21 @@ export default function PresencesScreen() {
                 ) : (
                   <View />
                 )}
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   disabled={submitting}
                   onPress={handleSubmit}
                   className="flex-row items-center gap-2 px-5 py-2.5 rounded-lg active:opacity-90"
-                  style={{ backgroundColor: '#9457FF' }}
+                  style={{ backgroundColor: '#3B0764' }}
                 >
                   {submitting ? (
                     <ActivityIndicator size="small" color="#FAFAFA" />
                   ) : (
                     <>
                       <Text className="text-white font-bold text-[14px] font-inter">
-                        {popupMode === 'add' ? 'Log Presence' : 'Save Changes'}
+                        Submit Presence
                       </Text>
-                      <Check size={15} color="#FAFAFA" />
+                      <ArrowRightCircle size={15} color="#FAFAFA" />
                     </>
                   )}
                 </TouchableOpacity>

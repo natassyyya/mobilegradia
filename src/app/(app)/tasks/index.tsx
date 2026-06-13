@@ -6,6 +6,10 @@ import {
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../../components/layout/screen-container';
+import { useWorkspace } from '../../../hooks/use-workspace';
+import { useAlert } from '../../../hooks/use-alert';
+import { getTasks, createTask, updateTask, deleteTask } from '../../../api/tasksApi';
+import { getCourses } from '../../../api/coursesApi';
 
 /* === HELPER WARNA === */
 const badgeCls = (type: string) => {
@@ -40,23 +44,63 @@ const formatTime = (isoStr: string) => {
 };
 
 export default function TasksScreen() {
-  const [openCategories, setOpenCategories] = useState<string[]>([]);
+  const { activeWorkspaceId } = useWorkspace();
+  const { showAlert } = useAlert();
+
+  const [openCategories, setOpenCategories] = useState<string[]>(['Not started', 'In progress', 'Overdue']);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
   const [form, setForm] = useState({
-    title: '', description: '', priority: 'High', status: 'Not started', score: '', link: ''
+    title: '', 
+    description: '', 
+    priority: 'High', 
+    status: 'Not started', 
+    id_course: null as number | null,
+    deadlineDate: '', 
+    deadlineTime: '23:59'
   });
 
-  useEffect(() => {
-    setTimeout(() => {
-      setTasks([]); 
+  const fetchTasks = async () => {
+    if (!activeWorkspaceId) {
       setLoading(false);
-    }, 1000);
-  }, []);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await getTasks(activeWorkspaceId);
+      setTasks(data || []);
+    } catch (err) {
+      console.error('[TasksScreen] Error loading tasks:', err);
+      showAlert({
+        title: 'Error',
+        desc: 'Failed to load tasks.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCourses = async () => {
+    if (!activeWorkspaceId) return;
+    try {
+      const data = await getCourses(activeWorkspaceId);
+      setCourses(data || []);
+    } catch (err) {
+      console.error('[TasksScreen] Error loading courses:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+    fetchCourses();
+  }, [activeWorkspaceId]);
 
   const groupedTasks = useMemo(() => ({
     'Not started': tasks.filter(t => t.status === 'Not started'),
@@ -72,15 +116,145 @@ export default function TasksScreen() {
   const handleOpenDrawer = (taskItem: any = null) => {
     if (taskItem) {
       setSelectedTask(taskItem);
+      let dDate = '';
+      let dTime = '23:59';
+      if (taskItem.deadline) {
+        try {
+          const d = new Date(taskItem.deadline);
+          if (!isNaN(d.getTime())) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const date = String(d.getDate()).padStart(2, '0');
+            dDate = `${year}-${month}-${date}`;
+            dTime = d.toTimeString().split(' ')[0].slice(0, 5);
+          }
+        } catch (e) {}
+      }
       setForm({
-        title: taskItem.title, description: taskItem.description, priority: taskItem.priority, 
-        status: taskItem.status, score: taskItem.score || '', link: taskItem.link || ''
+        title: taskItem.title || '', 
+        description: taskItem.description || '', 
+        priority: taskItem.priority || 'High', 
+        status: taskItem.status || 'Not started', 
+        id_course: taskItem.id_course || (courses[0]?.id_courses || null),
+        deadlineDate: dDate,
+        deadlineTime: dTime
       });
     } else {
       setSelectedTask(null);
-      setForm({ title: '', description: '', priority: 'High', status: 'Not started', score: '', link: '' });
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      
+      const year = tomorrow.getFullYear();
+      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const date = String(tomorrow.getDate()).padStart(2, '0');
+      const tomorrowStr = `${year}-${month}-${date}`;
+
+      setForm({ 
+        title: '', 
+        description: '', 
+        priority: 'High', 
+        status: 'Not started', 
+        id_course: courses[0]?.id_courses || null,
+        deadlineDate: tomorrowStr,
+        deadlineTime: '23:59'
+      });
     }
     setModalVisible(true);
+  };
+
+  const handleSave = async () => {
+    if (!activeWorkspaceId) {
+      showAlert({ title: 'Error', desc: 'No active workspace selected. Please select a workspace first.', variant: 'destructive' });
+      return;
+    }
+    if (!form.title.trim()) {
+      showAlert({ title: 'Validation', desc: 'Task name is required.', variant: 'destructive' });
+      return;
+    }
+
+    let courseId = form.id_course;
+    if (!courseId && courses.length > 0) {
+      courseId = courses[0].id_courses;
+    }
+
+    if (!courseId) {
+      showAlert({ title: 'Validation', desc: 'Please select a course. If you do not have any courses, please add one first in the Courses tab.', variant: 'destructive' });
+      return;
+    }
+
+    if (!form.deadlineDate.trim()) {
+      showAlert({ title: 'Validation', desc: 'Deadline date is required.', variant: 'destructive' });
+      return;
+    }
+
+    setActionLoading(true);
+
+    let deadlineIso = '';
+    try {
+      const d = new Date(`${form.deadlineDate}T${form.deadlineTime}:00`);
+      if (isNaN(d.getTime())) {
+        showAlert({ title: 'Validation', desc: 'Invalid date or time format. Use YYYY-MM-DD and HH:MM.', variant: 'destructive' });
+        setActionLoading(false);
+        return;
+      }
+      deadlineIso = d.toISOString();
+    } catch (e) {
+      showAlert({ title: 'Validation', desc: 'Invalid deadline date or time format.', variant: 'destructive' });
+      setActionLoading(false);
+      return;
+    }
+
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      priority: form.priority,
+      status: form.status,
+      id_course: courseId,
+      deadline: deadlineIso,
+      id_workspace: activeWorkspaceId,
+    };
+
+    try {
+      if (selectedTask) {
+        await updateTask(selectedTask.id_task, payload);
+        showAlert({ title: 'Success', desc: 'Task updated successfully.', variant: 'success' });
+      } else {
+        await createTask(payload);
+        showAlert({ title: 'Success', desc: 'Task created successfully.', variant: 'success' });
+      }
+      setModalVisible(false);
+      fetchTasks();
+    } catch (err: any) {
+      console.error('[TasksScreen] Save error:', err);
+      showAlert({
+        title: 'Error',
+        desc: err.message || 'Failed to save task.',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedTask) return;
+    setActionLoading(true);
+    try {
+      await deleteTask(selectedTask.id_task);
+      showAlert({ title: 'Deleted', desc: 'Task removed successfully.', variant: 'success' });
+      setModalVisible(false);
+      fetchTasks();
+    } catch (err: any) {
+      console.error('[TasksScreen] Delete error:', err);
+      showAlert({
+        title: 'Error',
+        desc: err.message || 'Failed to delete task.',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -246,17 +420,43 @@ export default function TasksScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
+              <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
                 <TextInput 
                   value={form.title}
                   onChangeText={(t) => setForm(prev => ({ ...prev, title: t }))}
                   placeholder="Enter Your Task Name"
                   placeholderTextColor="#6B7280"
                   multiline
-                  style={{ color: 'white', fontWeight: 'bold', fontSize: 32, marginBottom: 32, lineHeight: 40 }}
+                  style={{ color: 'white', fontWeight: 'bold', fontSize: 28, marginBottom: 24, lineHeight: 36 }}
                 />
 
                 <View style={{ gap: 24 }}>
+                  {/* Course Selection */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                    <Feather name="book" size={18} color="#A3A3A3" style={{ marginTop: 4 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: '#A3A3A3', fontSize: 13, marginBottom: 8 }}>Course *</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                        {courses.map((c) => {
+                          const isSelected = form.id_course === c.id_courses;
+                          return (
+                            <TouchableOpacity 
+                              key={c.id_courses} 
+                              onPress={() => setForm(prev => ({ ...prev, id_course: c.id_courses }))}
+                              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4, borderWidth: 1, backgroundColor: isSelected ? 'rgba(148,87,255,0.2)' : '#1b1b1b', borderColor: isSelected ? '#9457FF' : '#2c2c2c', marginRight: 8, marginBottom: 8 }}
+                            >
+                              <Text style={{ color: isSelected ? 'white' : '#A3A3A3' }}>{c.name}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                        {courses.length === 0 && (
+                          <Text style={{ color: '#6B7280', fontSize: 14, fontStyle: 'italic' }}>No courses available. Please add a course first.</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Description */}
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
                     <Feather name="file-text" size={18} color="#A3A3A3" style={{ marginTop: 4 }} />
                     <View style={{ flex: 1 }}>
@@ -271,6 +471,34 @@ export default function TasksScreen() {
                     </View>
                   </View>
 
+                  {/* Deadline Date and Time */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                    <Feather name="calendar" size={18} color="#A3A3A3" style={{ marginTop: 4 }} />
+                    <View style={{ flex: 1, flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#A3A3A3', fontSize: 13, marginBottom: 4 }}>Deadline Date *</Text>
+                        <TextInput 
+                          value={form.deadlineDate}
+                          onChangeText={(t) => setForm(prev => ({ ...prev, deadlineDate: t }))}
+                          placeholder="YYYY-MM-DD"
+                          placeholderTextColor="#6B7280"
+                          style={{ color: 'white', fontSize: 15, borderBottomWidth: 1, borderBottomColor: '#2c2c2c', paddingBottom: 8 }}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#A3A3A3', fontSize: 13, marginBottom: 4 }}>Time *</Text>
+                        <TextInput 
+                          value={form.deadlineTime}
+                          onChangeText={(t) => setForm(prev => ({ ...prev, deadlineTime: t }))}
+                          placeholder="HH:MM"
+                          placeholderTextColor="#6B7280"
+                          style={{ color: 'white', fontSize: 15, borderBottomWidth: 1, borderBottomColor: '#2c2c2c', paddingBottom: 8 }}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Priority */}
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
                     <Feather name="alert-circle" size={18} color="#A3A3A3" style={{ marginTop: 4 }} />
                     <View style={{ flex: 1 }}>
@@ -289,6 +517,7 @@ export default function TasksScreen() {
                     </View>
                   </View>
 
+                  {/* Status */}
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
                     <Feather name="loader" size={18} color="#A3A3A3" style={{ marginTop: 4 }} />
                     <View style={{ flex: 1 }}>
@@ -309,25 +538,33 @@ export default function TasksScreen() {
                 </View>
               </ScrollView>
 
+              {/* Footer Buttons */}
               <View style={{ position: 'absolute', bottom: 0, width: '100%', padding: 16, borderTopWidth: 1, borderTopColor: '#2c2c2c', backgroundColor: '#111111', flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
                 {selectedTask && (
                   <TouchableOpacity 
-                    onPress={() => setModalVisible(false)}
+                    onPress={handleDelete}
+                    disabled={actionLoading}
                     style={{ backgroundColor: '#830404', width: 44, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Feather name="trash-2" size={20} color="#FAFAFA" />
+                    {actionLoading ? <ActivityIndicator size="small" color="#FAFAFA" /> : <Feather name="trash-2" size={20} color="#FAFAFA" />}
                   </TouchableOpacity>
                 )}
                 
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <TouchableOpacity onPress={handleSave} disabled={actionLoading} style={{ flex: 1 }}>
                   <LinearGradient 
                     colors={['#34146C', '#28073B']} 
                     start={{x: 0, y: 0}} 
                     end={{x: 1, y: 1}} 
-                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 24, height: 44, borderRadius: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 8, opacity: actionLoading ? 0.5 : 1 }}
                   >
-                    <Feather name={selectedTask ? "save" : "plus"} size={18} color="#FAFAFA" />
-                    <Text style={{ color: 'white', fontWeight: '500' }}>{selectedTask ? 'Save changes' : 'Add task'}</Text>
+                    {actionLoading ? (
+                      <ActivityIndicator size="small" color="#FAFAFA" />
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Feather name={selectedTask ? "save" : "plus"} size={18} color="#FAFAFA" />
+                        <Text style={{ color: 'white', fontWeight: '500' }}>{selectedTask ? 'Save changes' : 'Add task'}</Text>
+                      </View>
+                    )}
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
