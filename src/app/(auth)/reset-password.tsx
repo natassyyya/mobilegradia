@@ -186,7 +186,7 @@ export default function ResetPasswordScreen() {
 
     setLoading(true);
     try {
-      const res = await changePassword(email, pass);
+      const res = await changePassword(email, pass) as any;
 
       if (res && res.status === 'success') {
         setStep('success');

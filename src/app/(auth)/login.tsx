@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ActivityIndicator, Modal, SafeAreaView } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,9 +13,16 @@ export default function LoginScreen() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { login: saveSession } = useAuth();
+  const { login: saveSession, user } = useAuth();
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [googleAuthUrl, setGoogleAuthUrl] = useState('');
+
+  // Auto-redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      router.replace('/workspaces' as any);
+    }
+  }, [user]);
 
   const handleLogin = async () => {
     setErrorMsg('');
@@ -25,7 +32,7 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const res = await login(email, password);
+      const res = await login(email, password) as any;
       if (res && !res.error) {
         // Simpan sesi user ke context global
         const userData = res.user || res.data || {
@@ -34,7 +41,7 @@ export default function LoginScreen() {
           email: res.email || email,
         };
         await saveSession(userData);
-        router.replace('/workspace' as any);
+        router.replace('/workspaces' as any);
       } else {
         setErrorMsg(res.error || 'Login failed. Please check your credentials.');
       }
@@ -49,12 +56,24 @@ export default function LoginScreen() {
     setErrorMsg('');
     setLoading(true);
     try {
-      const authUrlRes = await getGoogleAuthUrl();
+      let redirectUrl = undefined;
+      if (Platform.OS === 'web') {
+        redirectUrl = window.location.origin + '/login';
+      } else {
+        redirectUrl = 'gradiamobile://login';
+      }
+
+      const authUrlRes = await getGoogleAuthUrl(redirectUrl);
       if (!authUrlRes || authUrlRes.error || !authUrlRes.url) {
         throw new Error(authUrlRes?.error || 'Gagal mengambil URL otentikasi Google dari backend.');
       }
-      setGoogleAuthUrl(authUrlRes.url);
-      setShowGoogleModal(true);
+
+      if (Platform.OS === 'web') {
+        window.location.href = authUrlRes.url;
+      } else {
+        setGoogleAuthUrl(authUrlRes.url);
+        setShowGoogleModal(true);
+      }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Terjadi kesalahan saat memulai login Google.');
@@ -90,7 +109,7 @@ export default function LoginScreen() {
           email: callbackRes.email || '',
         };
         await saveSession(userData);
-        router.replace('/workspace' as any);
+        router.replace('/workspaces' as any);
       } else {
         throw new Error(callbackRes?.error || 'Gagal masuk menggunakan Google callback.');
       }
@@ -279,53 +298,55 @@ export default function LoginScreen() {
       </KeyboardAvoidingView>
 
       {/* Google Sign-In In-App WebView Modal */}
-      <Modal
-        visible={showGoogleModal}
-        animationType="slide"
-        onRequestClose={() => setShowGoogleModal(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
-          {/* Custom Header */}
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-white/10 bg-black">
-            <Text className="text-white text-lg font-bold font-inter">Google Sign-In</Text>
-            <TouchableOpacity 
-              onPress={() => setShowGoogleModal(false)}
-              className="px-3 py-1 bg-white/10 rounded-md"
-            >
-              <Text className="text-white font-inter text-sm">Close</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Google Sign-In WebView */}
-          <WebView
-            userAgent={
-              Platform.OS === 'ios'
-                ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
-                : 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
-            }
-            source={{ uri: googleAuthUrl }}
-            onNavigationStateChange={(navState) => {
-              // Intercept redirect to the backend website login URL
-              if (navState.url.includes('https://gradia-three.vercel.app/auth/login')) {
-                // Immediately close modal before displaying the web UI
-                setShowGoogleModal(false);
-                // Handle callback tokens exchange
-                handleGoogleCallback(navState.url);
+      {Platform.OS !== 'web' && (
+        <Modal
+          visible={showGoogleModal}
+          animationType="slide"
+          onRequestClose={() => setShowGoogleModal(false)}
+        >
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
+            {/* Custom Header */}
+            <View className="flex-row items-center justify-between px-4 py-3 border-b border-white/10 bg-black">
+              <Text className="text-white text-lg font-bold font-inter">Google Sign-In</Text>
+              <TouchableOpacity 
+                onPress={() => setShowGoogleModal(false)}
+                className="px-3 py-1 bg-white/10 rounded-md"
+              >
+                <Text className="text-white font-inter text-sm">Close</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Google Sign-In WebView */}
+            <WebView
+              userAgent={
+                Platform.OS === 'ios'
+                  ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
+                  : 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
               }
-            }}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            startInLoadingState={true}
-            renderLoading={() => (
-              <ActivityIndicator
-                color="#9457FF"
-                size="large"
-                style={styles.loadingOverlay}
-              />
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
+              source={{ uri: googleAuthUrl }}
+              onNavigationStateChange={(navState) => {
+                // Intercept redirect to the mobile custom scheme or access token callback
+                if (navState.url.includes('gradiamobile://login') || navState.url.includes('access_token=')) {
+                  // Immediately close modal before displaying the web UI
+                  setShowGoogleModal(false);
+                  // Handle callback tokens exchange
+                  handleGoogleCallback(navState.url);
+                }
+              }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <ActivityIndicator
+                  color="#9457FF"
+                  size="large"
+                  style={styles.loadingOverlay}
+                />
+              )}
+            />
+          </SafeAreaView>
+        </Modal>
+      )}
     </ScreenContainer>
   );
 }

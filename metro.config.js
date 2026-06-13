@@ -10,7 +10,7 @@ if (!config.resolver.assetExts.includes("ttf")) {
 
 // Add support for mjs file resolution
 if (!config.resolver.sourceExts.includes("mjs")) {
-  config.resolver.sourceExts.push("mjs");
+  config.resolver.sourceExts = ["mjs", ...config.resolver.sourceExts];
 }
 
 module.exports = withNativeWind(config, { input: "./src/global.css" });
