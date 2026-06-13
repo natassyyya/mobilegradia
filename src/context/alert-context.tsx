@@ -1,4 +1,6 @@
 import React, { createContext, useState, useCallback } from 'react';
+import { View } from 'react-native';
+import { Alert } from '../components/common/alert';
 
 export type AlertVariant = 'success' | 'destructive' | 'info' | 'warning';
 
@@ -35,7 +37,16 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <AlertContext.Provider value={{ alert, showAlert, hideAlert }}>
       {children}
-      {/* Toast Alert component can be rendered here */}
+      {alert && (
+        <View style={{ position: 'absolute', top: 50, left: 16, right: 16, zIndex: 9999 }}>
+          <Alert
+            title={alert.title}
+            desc={alert.desc}
+            variant={alert.variant}
+            onClose={hideAlert}
+          />
+        </View>
+      )}
     </AlertContext.Provider>
   );
 };

@@ -32,18 +32,18 @@ export async function getPresences(idWorkspace: number) {
     throw error;
   }
 
-  const formatted = (data || []).map((item) => ({
+  const formatted = (data || []).map((item: any) => ({
     id_presence: item.id_presence,
     id_course: item.id_course,
     presences_at: item.presences_at,
     status: item.status,
     note: item.note,
     created_at: item.created_at,
-    course_name: item.course?.[0]?.name || "-",
-    course_room: item.course?.[0]?.room || "-",
-    course_sks: item.course?.[0]?.sks || "-",
-    course_start: item.course?.[0]?.start || "-",
-    course_end: item.course?.[0]?.end || "-",
+    course_name: item.course?.name || "-",
+    course_room: item.course?.room || "-",
+    course_sks: item.course?.sks ?? "-",
+    course_start: item.course?.start || "-",
+    course_end: item.course?.end || "-",
   }));
 
   console.log(`[presencesApi] Loaded ${formatted.length} presences`);
