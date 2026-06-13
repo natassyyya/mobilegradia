@@ -67,7 +67,7 @@ export default function VerifyOtpScreen() {
       const res = await verifyOtp(email, otp, purpose);
       if (res && !res.error && res.otp_verified) {
         if (from === 'login') {
-          router.replace('/workspace' as any);
+          router.replace('/workspaces' as any);
         } else if (from === 'verification') {
           alert('Verification Success!');
           router.replace('/login' as any);

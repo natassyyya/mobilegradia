@@ -375,10 +375,10 @@ export async function sendOtp(email: string, purpose: string) {
 }
 
 // GET GOOGLE AUTH URL
-export async function getGoogleAuthUrl() {
+export async function getGoogleAuthUrl(customRedirectUrl?: string) {
   try {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://aufnfbyzpsicgwepyhxx.supabase.co';
-    const redirectUrl = "https://gradia-three.vercel.app/auth/login";
+    const redirectUrl = customRedirectUrl || "https://gradia-three.vercel.app/auth/login";
     const url = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
     return { url };
   } catch (err: any) {
