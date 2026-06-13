@@ -153,12 +153,12 @@ export default function DashboardScreen() {
   return (
     <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0, backgroundColor: '#000' }}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100, gap: 24 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#9457FF" />}
       >
 
-        {/* ── HEADER (Welcome in, username) ── */}
+         {/* ── HEADER (Welcome in, username) ── */}
         <View style={{ marginTop: 8, gap: 6 }}>
           <Text style={s.welcomeTitle}>
             Welcome in, <Text style={{ textTransform: 'capitalize' }}>{user?.username ?? 'User'}</Text>

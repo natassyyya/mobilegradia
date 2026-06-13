@@ -151,10 +151,10 @@ export default function WorkspaceScreen() {
           className="w-full px-4"
         >
           {/* Logo Section */}
-          <View className="w-full mt-10">
-            <View className="py-[22px] flex-row justify-start">
-              <Text className="text-[36px] font-extrabold tracking-wider text-white font-genos">
-                <Text className="text-[#9457FF]">GRA</Text>DIA
+          <View style={{ width: '100%', marginTop: 16 }}>
+            <View style={{ paddingTop: 22, paddingBottom: 48, flexDirection: 'row', justifyContent: 'flex-start' }}>
+              <Text style={{ fontSize: 36, color: '#FAFAFA', fontFamily: 'Genos-Bold', letterSpacing: 1.5 }}>
+                <Text style={{ color: '#9457FF' }}>GRA</Text>DIA
               </Text>
             </View>
           </View>
@@ -162,11 +162,11 @@ export default function WorkspaceScreen() {
           {/* Centered Wrapper */}
           <View style={{ flex: 1, justifyContent: 'center', paddingBottom: 60 }}>
             {/* Welcome Title */}
-            <View className="items-center">
-              <Text className="font-bold text-[32px] text-white text-center font-montserrat leading-tight">
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 32, color: 'white', textAlign: 'center', fontFamily: 'Montserrat-Bold', fontWeight: 'semibold', lineHeight: 38 }}>
                 Welcome to{'\n'}Gradia Workspace
               </Text>
-              <Text className="text-center text-[#A3A3A3] mt-3 px-4 text-sm leading-5 font-inter">
+              <Text style={{ textAlign: 'center', color: '#A3A3A3', marginTop: 12, paddingHorizontal: 16, fontSize: 14, lineHeight: 20, fontFamily: 'Inter' }}>
                 Your personal space to plan, grow, and achieve more.
               </Text>
             </View>

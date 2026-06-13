@@ -26,7 +26,7 @@ interface Course {
 
 export default function CoursesScreen() {
   const router = useRouter();
-  const { activeWorkspaceId, activeWorkspaceName } = useWorkspace();
+  const { activeWorkspaceId } = useWorkspace();
   const { showAlert } = useAlert();
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -257,7 +257,7 @@ export default function CoursesScreen() {
   };
 
   return (
-    <ScreenContainer useSafeArea={false} style={{ paddingHorizontal: 0 }}>
+    <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0 }}>
       {/* Solid Black Background */}
       <View className="absolute inset-0 z-0 pointer-events-none bg-black" />
 
@@ -266,34 +266,16 @@ export default function CoursesScreen() {
         className="flex-1 z-10"
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
-          className="w-full px-4"
+          className="w-full"
         >
-          {/* Logo Section */}
-          <View className="w-full mt-10">
-            <View className="py-[22px] flex-row justify-between items-center">
-              <Text className="text-[36px] font-extrabold tracking-wider text-white font-genos">
-                <Text className="text-[#9457FF]">GRA</Text>DIA
-              </Text>
-              {activeWorkspaceName && (
-                <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/5">
-                  <Text className="text-white text-xs font-semibold font-inter">
-                    {activeWorkspaceName}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Courses Title & Subtitle */}
-            <View className="mt-4">
-              <Text className="font-bold text-[24px] text-white font-montserrat">
-                Courses
-              </Text>
-              <Text className="text-[#A3A3A3] mt-2 text-sm leading-5 font-inter">
-                Keep track of your courses all in one place.
-              </Text>
-            </View>
+          {/* Header Section */}
+          <View className="w-full">
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', fontFamily: 'Montserrat-Bold' }}>Courses</Text>
+            <Text className="text-[#A3A3A3] mt-2 text-sm leading-5 font-inter">
+              Keep track of your courses all in one place.
+            </Text>
           </View>
 
           {/* Search bar */}

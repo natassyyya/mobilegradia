@@ -288,7 +288,7 @@ export default function LoginScreen() {
                     <ActivityIndicator size="small" color="#FAFAFA" />
                   )}
                   <Text className="text-white text-base font-inter text-center">
-                    {loading ? 'Logging in...' : 'Login'}
+                    {loading ? '' : 'Login'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>

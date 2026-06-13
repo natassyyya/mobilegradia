@@ -3,20 +3,18 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, 
   KeyboardAvoidingView, Platform, Modal, ActivityIndicator
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   Search, ChevronDown, X, Check, Menu, 
   ArrowRightCircle, Calendar, Clock, MapPin, Trash2
 } from 'lucide-react-native';
-import { ScreenContainer } from '../../components/layout/screen-container';
-import { useWorkspace } from '../../hooks/use-workspace';
-import { useAlert } from '../../hooks/use-alert';
-import { getPresences, createPresence, updatePresence, deletePresence } from '../../api/presencesApi';
-import { getCoursesToday } from '../../api/coursesApi';
+import { ScreenContainer } from '../../../components/layout/screen-container';
+import { useWorkspace } from '../../../hooks/use-workspace';
+import { useAlert } from '../../../hooks/use-alert';
+import { getPresences, createPresence, updatePresence, deletePresence } from '../../../api/presencesApi';
+import { getCoursesToday } from '../../../api/coursesApi';
 
 export default function PresencesScreen() {
-  const router = useRouter();
   const { activeWorkspaceId } = useWorkspace();
   const { showAlert } = useAlert();
 
@@ -221,24 +219,14 @@ export default function PresencesScreen() {
   };
 
   return (
-    <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 20 }}>
+    <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0 }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           
-          {/* Top Navbar */}
-          <View className="w-full mt-6 mb-8 flex-row justify-between items-center">
-            <Text className="text-2xl font-extrabold tracking-wider text-white font-genos">
-              <Text className="text-[#9457FF]">GRA</Text>DIA
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/workspaces' as any)}>
-              <Menu size={24} color="#FAFAFA" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Header */}
+          {/* Header Section */}
           <View className="w-full mb-6">
-            <Text className="font-montserrat text-[20px] font-semibold text-white">Presences</Text>
-            <Text className="text-[#A3A3A3] mt-2 text-[14px] font-inter leading-5">
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', fontFamily: 'Montserrat-Bold' }}>Presences</Text>
+            <Text className="text-[#A3A3A3] mt-2 text-sm leading-5 font-inter">
               Monitor and manage attendance records with access to presence logs.
             </Text>
           </View>
@@ -248,17 +236,15 @@ export default function PresencesScreen() {
             <Text className="text-white font-semibold text-center text-[20px] mb-4 font-montserrat">Total Presence</Text>
             
             <View className="flex-row justify-center items-center gap-8">
-              <View className="items-center gap-2.5">
-                <View className="w-[44px] h-[44px] rounded-md bg-[#22C55E]/15 items-center justify-center border border-[#22C55E]/30">
-                  <Text className="text-[#4ADE80] font-inter text-[20px] font-bold">{totalPresence}</Text>
-                </View>
-                <Text className="text-white font-inter text-[14px]">Presence</Text>
+              <View className="items-center">
+                <Text className="text-[#22C55E] font-bold text-[32px] font-montserrat">{totalPresence}</Text>
+                <Text className="text-white font-inter text-[14px]">Present</Text>
               </View>
-
-              <View className="items-center gap-2.5">
-                <View className="w-[44px] h-[44px] rounded-md bg-[#EF4444]/15 items-center justify-center border border-[#EF4444]/30">
-                  <Text className="text-[#F87171] font-inter text-[20px] font-bold">{totalAbsent}</Text>
-                </View>
+              
+              <View className="w-[1px] h-10 bg-[#2c2c2c]"></View>
+              
+              <View className="items-center">
+                <Text className="text-[#EF4444] font-bold text-[32px] font-montserrat">{totalAbsent}</Text>
                 <Text className="text-white font-inter text-[14px]">Absent</Text>
               </View>
             </View>
@@ -277,7 +263,7 @@ export default function PresencesScreen() {
                   const isAttended = attendedCourseIds.includes(item.id_course);
                   return (
                     <LinearGradient
-                      key={idx}
+                       key={idx}
                       colors={isAttended ? ['#0d0d0e', '#050505'] : ['#1a1230', '#141414']}
                       className={`rounded-[12px] p-4 border border-[#464646]/50 mr-4 w-[269px] ${
                         isAttended ? 'opacity-60' : ''

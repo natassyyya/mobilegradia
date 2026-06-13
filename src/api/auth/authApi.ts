@@ -162,7 +162,7 @@ export async function login(text: string, password: string) {
           user: dbUser,
         };
       } else {
-        return { success: false, error: "Invalid email/username or password." };
+        return { success: false, error: "Invalid email or password." };
       }
     } else {
       // If user does not exist in public.users, try Supabase Auth directly (e.g. for new OAuth/Auth users)
