@@ -14,8 +14,7 @@ import { ScreenContainer } from '../../../components/layout/screen-container';
 import { useAuth } from '../../../hooks/use-auth';
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { useAlert } from '../../../hooks/use-alert';
-import { getTasks } from '../../../api/tasksApi';
-import { getCoursesToday } from '../../../api/coursesApi';
+import { getDashboardData, DashboardStats } from '../../../api/dashboardApi';
 
 /* ─── helpers (sama persis dengan Badge di Web) ─────────── */
 const getBadgeStyle = (priority: string) => {
@@ -41,6 +40,17 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [courses,    setCourses]    = useState<any[]>([]);
   const [tasks,      setTasks]      = useState<any[]>([]);
+  const [stats,      setStats]      = useState<DashboardStats>({
+    total: 0,
+    completed: 0,
+    inProgress: 0,
+    notStarted: 0,
+    addedToday: 0,
+    dueToday: [],
+    completedPct: 0,
+    inProgPct: 0,
+    notStPct: 0,
+  });
 
   /* ── jam & tanggal (update tiap detik) ── */
   const [time, setTime] = useState('');
@@ -79,14 +89,14 @@ export default function DashboardScreen() {
 
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => getCityFromCoords(pos.coords.latitude, pos.coords.longitude),
-        async () => {
-          try {
-            const res  = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            setCity(data.city || data.region || 'Unknown');
-          } catch { setCity('Unknown'); }
-        }
+          (pos) => getCityFromCoords(pos.coords.latitude, pos.coords.longitude),
+          async () => {
+            try {
+              const res  = await fetch('https://ipapi.co/json/');
+              const data = await res.json();
+              setCity(data.city || data.region || 'Unknown');
+            } catch { setCity('Unknown'); }
+          }
       );
     } else {
       fetch('https://ipapi.co/json/')
@@ -97,23 +107,14 @@ export default function DashboardScreen() {
   }, []);
 
   /* ── fetch data ── */
-  const toLocalYmd = (value: any) => {
-    if (!value) return null;
-    const d = value instanceof Date ? value : new Date(value);
-    if (isNaN(d.getTime())) return null;
-    return d.toLocaleDateString('en-CA');
-  };
-
   const fetchData = async (showSpinner = true) => {
     if (!activeWorkspaceId) { setLoading(false); return; }
     if (showSpinner) setLoading(true);
     try {
-      const [t, c] = await Promise.all([
-        getTasks(activeWorkspaceId),
-        getCoursesToday(activeWorkspaceId),
-      ]);
-      setTasks(t   ?? []);
-      setCourses(c ?? []);
+      const data = await getDashboardData(activeWorkspaceId);
+      setTasks(data.tasks);
+      setCourses(data.courses);
+      setStats(data.stats);
     } catch {
       showAlert({ title: 'Error', desc: 'Gagal memuat data dashboard.', variant: 'destructive' });
     } finally {
@@ -124,23 +125,6 @@ export default function DashboardScreen() {
 
   useEffect(() => { fetchData(true); }, [activeWorkspaceId]);
   const onRefresh = () => { setRefreshing(true); fetchData(false); };
-
-  /* ── stats (logika sama persis dengan Mobile.jsx) ── */
-  const stats = useMemo(() => {
-    const todayYmd   = toLocalYmd(new Date());
-    const total      = tasks.length;
-    const completed  = tasks.filter(t => t.status === 'Completed').length;
-    const inProgress = tasks.filter(t => t.status === 'In progress').length;
-    const notStarted = tasks.filter(t =>
-      t.status === 'Not started' || t.status === 'Pending' || t.status === 'Overdue'
-    ).length;
-    const addedToday = tasks.filter(t => toLocalYmd(t.created_at) === todayYmd).length;
-    const dueToday   = tasks.filter(t => toLocalYmd(t.deadline)   === todayYmd);
-    const completedPct = total > 0 ? Math.round((completed  / total) * 100) : 0;
-    const inProgPct    = total > 0 ? Math.round((inProgress / total) * 100) : 0;
-    const notStPct     = total > 0 ? Math.round((notStarted / total) * 100) : 0;
-    return { total, completed, inProgress, notStarted, addedToday, dueToday, completedPct, inProgPct, notStPct };
-  }, [tasks]);
 
   /* ── pie legend (sama seperti const bg di Mobile.jsx) ── */
   const legend = [
