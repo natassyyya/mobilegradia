@@ -136,6 +136,9 @@ Di mobile, kita tidak menggunakan `localStorage` atau `sessionStorage` karena ti
 
 Gradia Mobile mengadopsi palet warna dari web untuk menjaga identitas merek yang konsisten. Di React Native, gaya diimplementasikan menggunakan StyleSheet native atau NativeWind (Tailwind CSS untuk React Native).
 
+### ICON USAGE
+Icon yang digunakan dari lucide react native!
+
 ### Konstanta Warna (`src/constants/colors.ts`)
 
 ```typescript
@@ -241,5 +244,56 @@ Grup rute ini menggunakan **Tabs Navigator** untuk 5 fitur utama di bagian bawah
 2. **Penyelarasan Payload API Otentikasi**:
    - Lokasi file: `src/services/auth.ts`.
    - Memperbaiki pemetaan parameter `verifyOtp` dari `{ email, otp }` menjadi `{ email, otp_code: payload.otp, action: payload.purpose }` agar sesuai dengan parameter rute API serverless `/api/auth/verifyOtp`.
+
+### [2026-06-04] — Integrasi Halaman Workspace Selection
+1. **Implementasi Halaman Pemilihan Workspace**:
+   - Lokasi file: `src/app/(app)/workspaces/index.tsx`.
+   - Membuat rute dan layout khusus grup rute `(app)` di `src/app/(app)/_layout.tsx`.
+   - Mengadaptasi layout visual web mobile (`Mobile.jsx`) ke dalam React Native: visual gelembung background (`bubble-1.png`, `bubble-2.png`), logo Gradia (font Genos), judul selamat datang (font Montserrat), list workspace Card, dan modal konfirmasi hapus.
+   - Menyertakan fitur lengkap CRUD workspace: loading, menambahkan workspace baru (maksimal 3), edit nama workspace secara inline, serta modal popup konfirmasi hapus workspace.
+   - Menambahkan mekanisme fallback lokal yang kokoh. Jika server / API `/api/workspaces` tidak aktif/error, data workspace tetap dapat dikelola secara lokal pada state aplikasi untuk kemudahan testing UI.
+2. **Penyelarasan Navigasi Login**:
+   - Lokasi file: `src/app/(auth)/login.tsx`.
+   - Memperbarui tombol Login untuk mengarahkan pengguna langsung ke `/(app)/workspaces` setelah berhasil login.
+   - Menyertakan pemanggilan `performLogin` dari `useAuth()` dengan user data tiruan `{ id_user: 1 }` saat tombol login di klik agar sesi auth tersimpan dan halaman workspace dapat melakukan query data secara presisi.
+
+### [2026-06-07] — Refactoring & Penyempurnaan 100% Frontend Workspace Selection
+1. **Penyelarasan Tampilan Frontend Persis 100% dengan Web**:
+   - Menambahkan ikon vector modern menggunakan `lucide-react-native` untuk ikon menu (MoreVertical), edit (Pencil), delete (Trash2), masuk workspace (ArrowRightCircle), tambah (Plus), cancel/dismiss (X), checkmark (Check), dan warning (AlertTriangle).
+   - Menggantikan background initials static pada kartu workspace dengan komponen `<LinearGradient>` dari `expo-linear-gradient` untuk gradasi `from-[#6a6a6a] to-[#141414]` (persis versi web).
+   - Mengubah layout tombol masuk workspace menjadi button gradient `from-[#34146C] to-[#28073B]` dengan ikon ArrowRightCircle (persis tombol custom di web).
+   - Menyelaraskan padding dan layout container body-section menggunakan `py-9 px-3 bg-white/5` tanpa border eksternal.
+   - Memperbaiki modal warning hapus workspace menggunakan ikon peringatan merah `AlertTriangle` berwarna `#E13030` persis SVG di web.
+2. **Kesesuaian Tipe TypeScript**:
+   - Menginstal dependensi `lucide-react-native` secara resmi ke dalam proyek mobile.
+   - Melakukan casting type `'as any'` pada rute `router.replace('/(app)/dashboard')` untuk mencegah error validasi rute statis di Expo Router sebelum halaman dashboard utama diimplementasikan.
+
+### [2026-06-07] — Integrasi Halaman Courses (Penjadwalan Kuliah)
+1. **Penyelarasan Tampilan & Fitur Frontend Persis 100% dengan Web**:
+   - Membangun layar daftar kuliah `Mobile/src/app/(app)/courses/index.tsx` dengan visual layout dan data flow sama persis dengan web mobile layout (`Tab.jsx` & `Card.jsx`).
+   - Menyertakan header "Courses", deskripsi sub-heading, input search bar untuk memfilter daftar mata kuliah, dan button "Add Course" bergradasi ungu gelap.
+   - Mengelompokkan mata kuliah per hari (Senin s.d. Jumat) dengan badge indicator count jumlah mata kuliah per hari menggunakan badge berlatar belakang `#FDE047` transparan dengan teks kuning (`#FDE047`), persis visual web.
+   - Kartu mata kuliah menampilkan durasi waktu (format `HH:MM`), dot indikator SKS (Merah untuk 3 SKS, Kuning untuk 2 SKS, Cyan/Blue untuk 1 SKS), judul matakuliah beserta alias, nama ruangan (Room), dan nama dosen pengampu (Lecturer).
+   - Mengintegrasikan modal overlay slide-up interaktif untuk form penambahan dan detail/edit mata kuliah. Di dalamnya terdapat field nama matakuliah, alias, nama dosen, nomor telepon (disertai tombol pintasan untuk WhatsApp), hari, waktu mulai/selesai, ruangan, link kelas (disertai tombol pintasan untuk buka link eksternal), serta segmentasi jumlah SKS (1, 2, atau 3 SKS) yang di-highlight dinamis sesuai warnanya.
+2. **Koneksi Real Backend (Direct Supabase SDK)**:
+   - Terintegrasi langsung dengan database Supabase Cloud menggunakan modul API bawaan mobile `Mobile/src/api/coursesApi.ts` (`getCourses`, `createCourse`, `updateCourse`, `deleteCourse`) dengan filter ID workspace aktif.
+   - Menghubungkan fungsi aksi simpan, ubah, dan hapus ke client-side SDK Supabase secara asinkron lengkap dengan loading spinner dan toast alert (success/destructive) dari `useAlert()`.
+3. **Pembaruan Navigasi Alur Masuk**:
+   - Memperbarui rute redirect di `workspaces/index.tsx` setelah pengguna memilih workspace aktif untuk langsung diarahkan ke halaman `/courses` (karena halaman dashboard belum diimplementasikan).
+
+### [2026-06-07] — Integrasi Halaman Presensi / Kehadiran
+1. **Implementasi Halaman Presensi (`Mobile/src/app/(app)/presences.tsx`)**:
+   - Membangun halaman presensi yang terintegrasi langsung dengan database Supabase Cloud menggunakan modul API `presencesApi` (`getPresences`, `createPresence`, `updatePresence`, `deletePresence`) dan `coursesApi` (`getCoursesToday`) berdasarkan filter ID workspace aktif.
+   - Menyertakan visual panel total kehadiran (Present vs Absent) dan slider horizontal jadwal mata kuliah hari ini (Courses Today) lengkap dengan penanda status kehadiran (Logged Presence).
+   - Menghubungkan log kehadiran ke tabel data riwayat presensi yang responsif dan dapat di-scroll horizontal secara halus di mobile, lengkap dengan fitur pencarian dan paginasi data.
+   - Menyediakan modal popup fungsional untuk mencatat kehadiran (Log Presence), mengubah catatan/status kehadiran (Edit Presence), serta opsi untuk menghapus log presensi langsung (Delete Presence).
+   - Menggunakan ikon vector modern `lucide-react-native` (Search, ChevronDown, X, Check, Menu, ArrowRightCircle, Clock, MapPin, Trash2) untuk konsistensi desain 100% dengan Web.
+2. **Penyelesaian Resolusi Modul & Kompilasi**:
+   - Menginstal ulang modul `lucide-react-native` ke dependensi resmi `package.json`.
+   - Memperbarui konfigurasi `Mobile/metro.config.js` untuk menambahkan ekstensi `.mjs` ke `sourceExts` agar bundler dapat membaca aset ikon Lucide dengan lancar.
+   - Menyelesaikan seluruh type checking compiler sehingga berhasil lulus uji compile build `npx tsc --noEmit` tanpa error (Exit code: 0).
+
+
+
 
 

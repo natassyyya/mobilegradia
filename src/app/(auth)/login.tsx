@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, P
 import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
-
 import { useAuth } from '../../hooks/use-auth';
 import { login, getGoogleAuthUrl, googleCallback } from '../../api/auth';
 import { WebView } from 'react-native-webview';
