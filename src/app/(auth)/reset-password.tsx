@@ -266,10 +266,10 @@ export default function ResetPasswordScreen() {
           className="w-full px-4"
         >
           {/* Top Section: Logo */}
-          <View className="w-full mt-10">
-            <View className="py-[22px] flex-row justify-start">
-              <Text className="text-[36px] font-extrabold tracking-wider text-white font-genos">
-                <Text className="text-[#9457FF]">GRA</Text>DIA
+          <View style={{ width: '100%', marginTop: 40 }}>
+            <View style={{ paddingTop: 22, paddingBottom: 22, flexDirection: 'row', justifyContent: 'flex-start' }}>
+              <Text style={{ fontSize: 36, color: '#FAFAFA', fontFamily: 'Genos-Bold', letterSpacing: 1.5 }}>
+                <Text style={{ color: '#9457FF' }}>GRA</Text>DIA
               </Text>
             </View>
           </View>
@@ -277,11 +277,11 @@ export default function ResetPasswordScreen() {
           {/* STEP 1: EMAIL INPUT */}
           {step === 'email' && (
             <View className="flex-1 justify-center">
-              <View className="items-center mt-4">
-                <Text className="font-bold text-[32px] text-white text-center font-montserrat">
+              <View style={{ alignItems: 'center', marginTop: 16 }}>
+                <Text style={{ fontSize: 32, color: 'white', textAlign: 'center', fontFamily: 'Montserrat-Bold', fontWeight: 'semibold', lineHeight: 38 }}>
                   Forgot Password?
                 </Text>
-                <Text className="text-center text-[#A3A3A3] mt-3 px-4 text-sm leading-5 font-inter">
+                <Text style={{ textAlign: 'center', color: '#A3A3A3', marginTop: 12, paddingHorizontal: 16, fontSize: 14, lineHeight: 20, fontFamily: 'Inter' }}>
                   Enter your email to reset password
                 </Text>
               </View>
@@ -350,11 +350,11 @@ export default function ResetPasswordScreen() {
           {/* STEP 2: VERIFY OTP */}
           {step === 'otp' && (
             <View className="flex-1 justify-center">
-              <View className="items-center mt-4">
-                <Text className="font-bold text-[32px] text-white text-center font-montserrat">
+              <View style={{ alignItems: 'center', marginTop: 16 }}>
+                <Text style={{ fontSize: 32, color: 'white', textAlign: 'center', fontFamily: 'Montserrat-Bold', fontWeight: 'semibold', lineHeight: 38 }}>
                   Verify OTP
                 </Text>
-                <Text className="text-center text-[#A3A3A3] mt-3 px-4 text-sm leading-5 font-inter">
+                <Text style={{ textAlign: 'center', color: '#A3A3A3', marginTop: 12, paddingHorizontal: 16, fontSize: 14, lineHeight: 20, fontFamily: 'Inter' }}>
                   Enter the 6-digit code sent to your email
                 </Text>
               </View>
@@ -442,12 +442,12 @@ export default function ResetPasswordScreen() {
           {/* STEP 3: NEW PASSWORD */}
           {step === 'newPw' && (
             <View className="flex-1 justify-center">
-              <View className="items-center mt-4">
-                <Text className="font-bold text-[32px] text-white text-center font-montserrat">
+              <View style={{ alignItems: 'center', marginTop: 16 }}>
+                <Text style={{ fontSize: 32, color: 'white', textAlign: 'center', fontFamily: 'Montserrat-Bold', fontWeight: 'semibold', lineHeight: 38 }}>
                   New Password
                 </Text>
-                <Text className="text-center text-[#A3A3A3] mt-3 px-4 text-sm leading-5 font-inter">
-                  Enter your new password for <Text className="font-semibold text-white">{email}</Text>
+                <Text style={{ textAlign: 'center', color: '#A3A3A3', marginTop: 12, paddingHorizontal: 16, fontSize: 14, lineHeight: 20, fontFamily: 'Inter' }}>
+                  Enter your new password for <Text style={{ fontWeight: '600', color: 'white', fontFamily: 'Inter-SemiBold' }}>{email}</Text>
                 </Text>
               </View>
 
@@ -553,11 +553,11 @@ export default function ResetPasswordScreen() {
           {/* STEP 4: SUCCESS MESSAGE */}
           {step === 'success' && (
             <View className="flex-1 justify-center">
-              <View className="items-center mt-4">
-                <Text className="font-bold text-[32px] text-white text-center font-montserrat">
+              <View style={{ alignItems: 'center', marginTop: 16 }}>
+                <Text style={{ fontSize: 32, color: 'white', textAlign: 'center', fontFamily: 'Montserrat-Bold', fontWeight: 'semibold', lineHeight: 38 }}>
                   Password Reset Successfully
                 </Text>
-                <Text className="text-center text-[#A3A3A3] mt-8 px-4 text-sm leading-6 font-inter">
+                <Text style={{ textAlign: 'center', color: '#A3A3A3', marginTop: 32, paddingHorizontal: 16, fontSize: 14, lineHeight: 24, fontFamily: 'Inter' }}>
                   Your password has been successfully updated. You can now log in and continue managing your goals with Gradia.
                 </Text>
               </View>

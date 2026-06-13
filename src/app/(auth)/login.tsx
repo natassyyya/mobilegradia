@@ -149,21 +149,21 @@ export default function LoginScreen() {
           className="w-full px-4"
         >
           {/* Top Section: Logo & Welcome */}
-          <View className="w-full mt-10">
+          <View style={{ width: '100%', marginTop: 40 }}>
             {/* Logo - Font Genos */}
-            <View className="py-[22px] flex-row justify-start">
-              <Text className="text-[36px] font-extrabold tracking-wider text-white font-genos">
-                <Text className="text-[#9457FF]">GRA</Text>DIA
+            <View style={{ paddingTop: 22, paddingBottom: 22, flexDirection: 'row', justifyContent: 'flex-start' }}>
+              <Text style={{ fontSize: 36, color: '#FAFAFA', fontFamily: 'Genos-Bold', letterSpacing: 1.5 }}>
+                <Text style={{ color: '#9457FF' }}>GRA</Text>DIA
               </Text>
             </View>
 
             {/* Welcome Text - Font Montserrat */}
-            <View className="items-center mt-4">
-              <Text className="font-bold text-[32px] text-white text-center font-montserrat">
+            <View style={{ alignItems: 'center', marginTop: 16 }}>
+              <Text style={{ fontSize: 32, color: 'white', textAlign: 'center', fontFamily: 'Montserrat-Bold', fontWeight: 'semibold', lineHeight: 38 }}>
                 Welcome Back
               </Text>
               {/* Description - Font Inter */}
-              <Text className="text-center text-[#A3A3A3] mt-3 px-4 text-sm leading-5 font-inter">
+              <Text style={{ textAlign: 'center', color: '#A3A3A3', marginTop: 12, paddingHorizontal: 16, fontSize: 14, lineHeight: 20, fontFamily: 'Inter' }}>
                 Gradia helps you organize, login, and turn your self-management into real results.
               </Text>
             </View>
@@ -288,7 +288,7 @@ export default function LoginScreen() {
                     <ActivityIndicator size="small" color="#FAFAFA" />
                   )}
                   <Text className="text-white text-base font-inter text-center">
-                    {loading ? 'Logging in...' : 'Login'}
+                    {loading ? '' : 'Login'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>

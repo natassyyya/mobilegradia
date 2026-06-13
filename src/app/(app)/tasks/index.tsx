@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ScreenContainer } from '../../components/layout/screen-container';
+import { ScreenContainer } from '../../../components/layout/screen-container';
 
 /* === HELPER WARNA === */
 const badgeCls = (type: string) => {
@@ -86,21 +86,11 @@ export default function TasksScreen() {
   return (
     <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0, backgroundColor: '#000000' }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 80, paddingHorizontal: 20 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }}>
           
-          {/* === HEADER GRADIA & MENU (UKURAN 36px PERSIS LOGIN) === */}
-          <View style={{ width: '100%', marginTop: 16, marginBottom: 32, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text className="font-genos" style={{ fontSize: 36, fontWeight: '800', color: 'white', letterSpacing: 2 }}>
-              <Text style={{ color: '#9457FF' }}>GRA</Text>DIA
-            </Text>
-            <TouchableOpacity>
-              <Feather name="menu" size={28} color="#FAFAFA" />
-            </TouchableOpacity>
-          </View>
-
-          {/* === TITLE === */}
-          <View style={{ width: '100%', marginBottom: 24 }}>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', color: 'white', marginBottom: 8 }}>Tasks</Text>
+          {/* Header Section */}
+          <View style={{ width: '100%', marginBottom: 24, gap: 8 }}>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', fontFamily: 'Montserrat-Bold' }}>Tasks</Text>
             <Text style={{ color: '#A3A3A3', fontSize: 14, lineHeight: 20 }}>Keep track of your tasks all in one place.</Text>
           </View>
 

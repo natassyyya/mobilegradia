@@ -14,6 +14,7 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../../components/layout/screen-container';
 import { useWorkspace } from '../../../hooks/use-workspace';
+import { useRouter } from 'expo-router';
 import { getTasks } from '../../../api/tasksApi';
 
 /* ─── Badge colour map (persis seperti Calendar.jsx) ──────── */
@@ -77,6 +78,7 @@ const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 /* ════════════════════════════════════════════════════════════ */
 export default function CalendarScreen() {
+  const router = useRouter();
   const { activeWorkspaceId } = useWorkspace();
 
   const [tasks,        setTasks]        = useState<any[]>([]);
@@ -140,22 +142,14 @@ export default function CalendarScreen() {
   return (
     <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0, backgroundColor: '#000' }}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 28 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100, gap: 28 }}
         showsVerticalScrollIndicator={false}
       >
 
-        {/* ── HEADER (persis Mobile.jsx) ── */}
-        {/* Web: flex flex-col gap-2 */}
-        <View style={{ gap: 6, marginTop: 8 }}>
-          {/* Web: flex justify-between */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <View style={{ gap: 4 }}>
-              {/* Web: font-montserrat text-[20px] font-semibold */}
-              <Text style={s.pageTitle}>Calendar</Text>
-              {/* Web: text-foreground-secondary */}
-              <Text style={s.pageSub}>Stay on track every day with your smart calendar.</Text>
-            </View>
-          </View>
+        {/* ── HEADER ── */}
+        <View style={{ marginTop: 8, gap: 6 }}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', fontFamily: 'Montserrat-Bold' }}>Calendar</Text>
+          <Text style={{ color: '#A3A3A3', fontSize: 14, lineHeight: 20 }}>Stay on track every day with your smart calendar.</Text>
         </View>
 
         {/* ── SEARCH (Mobile.jsx: di bawah header pada mobile) ── */}
