@@ -101,25 +101,81 @@ export async function login(text: string, password: string) {
       }
     }
 
-    // 1. Sign in via Supabase Auth
-    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInErr) {
-      return { success: false, error: signInErr.message };
-    }
-
-    // 2. Query public users profile
+    // 1. Fetch user from public users table first
     let { data: dbUser } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .maybeSingle();
 
-    if (!dbUser) {
-      // Create profile on the fly if missing
+    if (dbUser) {
+      // 2. Verify password locally via bcrypt
+      const isPasswordValid = bcrypt.compareSync(password, dbUser.password);
+      if (isPasswordValid) {
+        // If they don't have a supabase_uid, sign them up in Supabase Auth in the background
+        if (!dbUser.supabase_uid) {
+          try {
+            const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+              email,
+              password,
+            });
+
+            if (!signUpErr && signUpData.user) {
+              const { data: updatedUser } = await supabase
+                .from('users')
+                .update({ supabase_uid: signUpData.user.id, is_verified: true })
+                .eq('id_user', dbUser.id_user)
+                .select()
+                .single();
+              if (updatedUser) {
+                dbUser = updatedUser;
+              }
+            }
+          } catch (e) {
+            console.warn("Background Supabase signup failed:", e);
+          }
+        } else {
+          // If they have a supabase_uid, try to sign in via Supabase Auth to establish the session
+          try {
+            await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+          } catch (e) {
+            console.warn("Background Supabase signin failed:", e);
+          }
+        }
+
+        // Check verification status
+        if (!dbUser.is_verified) {
+          await sendOtp(email, 'registration');
+          return {
+            error: "User is not verified. Please verify your OTP.",
+            requireVerification: true,
+            email: email,
+            purpose: 'registration',
+          };
+        }
+
+        return {
+          success: true,
+          user: dbUser,
+        };
+      } else {
+        return { success: false, error: "Invalid email/username or password." };
+      }
+    } else {
+      // If user does not exist in public.users, try Supabase Auth directly (e.g. for new OAuth/Auth users)
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInErr) {
+        return { success: false, error: signInErr.message };
+      }
+
+      // Create public profile if authenticated but public profile is missing
       const { data: newUser, error: insErr } = await supabase
         .from('users')
         .insert([
@@ -136,36 +192,12 @@ export async function login(text: string, password: string) {
 
       if (insErr) return { success: false, error: insErr.message };
       dbUser = newUser;
-    } else {
-      // Check if user has verified their OTP
-      if (!dbUser.is_verified) {
-        await sendOtp(email, 'registration');
-        return {
-          error: "User is not verified. Please verify your OTP.",
-          requireVerification: true,
-          email: email,
-          purpose: 'registration',
-        };
-      }
 
-      // Sync supabase_uid if missing
-      if (!dbUser.supabase_uid || dbUser.supabase_uid !== signInData.user?.id) {
-        const { data: updatedUser } = await supabase
-          .from('users')
-          .update({ supabase_uid: signInData.user?.id })
-          .eq('id_user', dbUser.id_user)
-          .select()
-          .single();
-        if (updatedUser) {
-          dbUser = updatedUser;
-        }
-      }
+      return {
+        success: true,
+        user: dbUser,
+      };
     }
-
-    return {
-      success: true,
-      user: dbUser,
-    };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
