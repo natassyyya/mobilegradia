@@ -2,12 +2,12 @@
  * Dashboard Screen — Mobile
  * Layout 100% identik dengan Web/src/pages/Dashboard/Layout/Mobile.jsx
  */
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   ActivityIndicator, RefreshControl, StyleSheet,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowUpRight, FileText, MapPin, BookOpen } from 'lucide-react-native';
 import { ScreenContainer } from '../../../components/layout/screen-container';
@@ -104,7 +104,7 @@ export default function DashboardScreen() {
     return d.toLocaleDateString('en-CA');
   };
 
-  const fetchData = async (showSpinner = true) => {
+  const fetchData = useCallback(async (showSpinner = true) => {
     if (!activeWorkspaceId) { setLoading(false); return; }
     if (showSpinner) setLoading(true);
     try {
@@ -120,9 +120,13 @@ export default function DashboardScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [activeWorkspaceId, showAlert]);
 
-  useEffect(() => { fetchData(true); }, [activeWorkspaceId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData(true);
+    }, [fetchData])
+  );
   const onRefresh = () => { setRefreshing(true); fetchData(false); };
 
   /* ── stats (logika sama persis dengan Mobile.jsx) ── */

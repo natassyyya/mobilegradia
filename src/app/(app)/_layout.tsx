@@ -3,11 +3,11 @@
  *
  * Navigasi utama setelah login & pilih workspace.
  * Menyajikan 5 Menu Utama di Tab Bar (untuk touch target maksimal):
- *   - Calendar
  *   - Tasks
+ *   - Calendar
  *   - Dashboard (Di tengah, lebih besar, gradien menonjol)
- *   - Courses
- *   - Menu (Membuka Bottom Sheet Drawer berisi Presences, Switch Workspace, Logout)
+ *   - Notifications (Ada badge merah klo ada notifikasi belum dibaca)
+ *   - Menu (Membuka Bottom Sheet Drawer berisi Courses, Presences, Switch Workspace, Logout)
  *
  * Desain tab bar mengacu pada Modern Floating, Rounded, Glassmorphism Dock.
  */
@@ -19,19 +19,22 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../hooks/use-auth';
+import { useNotifications } from '../../hooks/use-notifications';
+import { NotificationProvider } from '../../context/notification-context';
 import {
   LayoutDashboard,
   CalendarDays,
   ClipboardList,
-  BookOpen,
   Menu as MenuIcon,
   X,
+  Bell,
 } from 'lucide-react-native';
 
 /* ─── CUSTOM FLOATING TAB BAR ───────────────────────────────── */
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const router = useRouter();
   const { logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -69,26 +72,13 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     setShowLogoutConfirm(false);
   };
 
-  // Apakah tab More/Menu sedang aktif secara visual (misal pas buka presences)
-  const isMenuTabActive = activeRouteName === 'presences/index' || menuOpen;
+  // Apakah tab More/Menu sedang aktif secara visual (misal pas buka presences / courses)
+  const isMenuTabActive = activeRouteName === 'presences/index' || activeRouteName === 'courses/index' || menuOpen;
 
   return (
     <>
       <View style={styles.floatingContainer}>
-        {/* 1. Calendar */}
-        <TouchableOpacity
-          onPress={() => navigateTo('calendar/index')}
-          style={styles.tabButton}
-          activeOpacity={0.7}
-        >
-          <CalendarDays
-            size={22}
-            color={activeRouteName === 'calendar/index' ? '#9457FF' : '#A3A3A3'}
-          />
-          {activeRouteName === 'calendar/index' && <View style={styles.activeDot} />}
-        </TouchableOpacity>
-
-        {/* 2. Tasks */}
+        {/* 1. Tasks */}
         <TouchableOpacity
           onPress={() => navigateTo('tasks/index')}
           style={styles.tabButton}
@@ -99,6 +89,19 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             color={activeRouteName === 'tasks/index' ? '#9457FF' : '#A3A3A3'}
           />
           {activeRouteName === 'tasks/index' && <View style={styles.activeDot} />}
+        </TouchableOpacity>
+
+        {/* 2. Calendar */}
+        <TouchableOpacity
+          onPress={() => navigateTo('calendar/index')}
+          style={styles.tabButton}
+          activeOpacity={0.7}
+        >
+          <CalendarDays
+            size={22}
+            color={activeRouteName === 'calendar/index' ? '#9457FF' : '#A3A3A3'}
+          />
+          {activeRouteName === 'calendar/index' && <View style={styles.activeDot} />}
         </TouchableOpacity>
 
         {/* 3. Dashboard (Tengah / Menonjol) */}
@@ -120,17 +123,20 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* 4. Courses */}
+        {/* 4. Notifications */}
         <TouchableOpacity
-          onPress={() => navigateTo('courses/index')}
+          onPress={() => navigateTo('notifications/index')}
           style={styles.tabButton}
           activeOpacity={0.7}
         >
-          <BookOpen
-            size={22}
-            color={activeRouteName === 'courses/index' ? '#9457FF' : '#A3A3A3'}
-          />
-          {activeRouteName === 'courses/index' && <View style={styles.activeDot} />}
+          <View style={{ position: 'relative' }}>
+            <Bell
+              size={22}
+              color={activeRouteName === 'notifications/index' ? '#9457FF' : '#A3A3A3'}
+            />
+            {unreadCount > 0 && <View style={styles.badgeBadge} />}
+          </View>
+          {activeRouteName === 'notifications/index' && <View style={styles.activeDot} />}
         </TouchableOpacity>
 
         {/* 5. More / Menu */}
@@ -176,6 +182,22 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 {!showLogoutConfirm ? (
                   /* Bullet Menu Items */
                   <View style={styles.bulletList}>
+                    {/* Courses */}
+                    <TouchableOpacity
+                      onPress={() => handleMenuAction(() => navigateTo('courses/index'))}
+                      activeOpacity={0.7}
+                      style={styles.bulletItem}
+                    >
+                      <Text 
+                        style={[
+                          styles.bulletText, 
+                          activeRouteName === 'courses/index' ? styles.bulletTextInactive : styles.bulletTextActive
+                        ]}
+                      >
+                        •  Courses
+                      </Text>
+                    </TouchableOpacity>
+
                     {/* Presences */}
                     <TouchableOpacity
                       onPress={() => handleMenuAction(() => navigateTo('presences/index'))}
@@ -191,6 +213,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                         •  Presences
                       </Text>
                     </TouchableOpacity>
+
+                    {/* Horizontal Divider Line */}
+                    <View style={styles.drawerDividerLine} />
 
                     {/* Switch Workspace */}
                     <TouchableOpacity
@@ -306,31 +331,36 @@ export default function AppLayout() {
   }
 
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      {/* ── Dashboard ── */}
-      <Tabs.Screen name="dashboard/index" options={{ title: 'Dashboard' }} />
+    <NotificationProvider>
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        {/* ── Dashboard ── */}
+        <Tabs.Screen name="dashboard/index" options={{ title: 'Dashboard' }} />
 
-      {/* ── Calendar ── */}
-      <Tabs.Screen name="calendar/index" options={{ title: 'Calendar' }} />
+        {/* ── Calendar ── */}
+        <Tabs.Screen name="calendar/index" options={{ title: 'Calendar' }} />
 
-      {/* ── Tasks ── */}
-      <Tabs.Screen name="tasks/index" options={{ title: 'Tasks' }} />
+        {/* ── Tasks ── */}
+        <Tabs.Screen name="tasks/index" options={{ title: 'Tasks' }} />
 
-      {/* ── Courses ── */}
-      <Tabs.Screen name="courses/index" options={{ title: 'Courses' }} />
+        {/* ── Courses ── */}
+        <Tabs.Screen name="courses/index" options={{ title: 'Courses' }} />
 
-      {/* ── Presences ── */}
-      <Tabs.Screen name="presences/index" options={{ title: 'Presences' }} />
+        {/* ── Presences ── */}
+        <Tabs.Screen name="presences/index" options={{ title: 'Presences' }} />
 
-      {/* ── Workspaces (Hidden) ── */}
-      <Tabs.Screen name="workspaces/index" options={{ href: null, title: 'Workspaces' }} />
+        {/* ── Notifications ── */}
+        <Tabs.Screen name="notifications/index" options={{ title: 'Notifications' }} />
 
-    </Tabs>
+        {/* ── Workspaces (Hidden) ── */}
+        <Tabs.Screen name="workspaces/index" options={{ href: null, title: 'Workspaces' }} />
+
+      </Tabs>
+    </NotificationProvider>
   );
 }
 
@@ -398,6 +428,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 10,
   },
+  badgeBadge: {
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    backgroundColor: '#EF4444',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   // Modal Drawer Styles
   modalOverlay: {
     flex: 1,
@@ -433,6 +472,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 32,
+  },
+  drawerDividerLine: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 8,
   },
   bulletList: {
     flexDirection: 'column',
