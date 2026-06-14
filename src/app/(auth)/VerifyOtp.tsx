@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
 import { verifyOtp, sendOtp } from '../../api/auth';
+import { useWorkspace } from '../../hooks/use-workspace';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -23,6 +24,8 @@ export default function VerifyOtpScreen() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  
+  const { activeWorkspaceId } = useWorkspace();
   
   // Jika expiredAt dari parameter kosong, kita buat dummy 5 menit dari sekarang
   const dummyExpire = new Date(new Date().getTime() + 5 * 60000).toISOString();
@@ -67,7 +70,11 @@ export default function VerifyOtpScreen() {
       const res = await verifyOtp(email, otp, purpose);
       if (res && !res.error && res.otp_verified) {
         if (from === 'login') {
-          router.replace('/workspaces' as any);
+          if (activeWorkspaceId) {
+            router.replace('/(app)/dashboard' as any);
+          } else {
+            router.replace('/workspaces' as any);
+          }
         } else if (from === 'verification') {
           alert('Verification Success!');
           router.replace('/login' as any);

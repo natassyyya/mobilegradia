@@ -1,4 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CONFIG } from '../constants/config';
 
 interface WorkspaceContextType {
   activeWorkspaceId: number | null;
@@ -15,21 +17,42 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     const loadWorkspace = async () => {
-      // Ambil id_workspace terakhir dari AsyncStorage
+      try {
+        const idVal = await AsyncStorage.getItem(CONFIG.STORAGE_KEYS.ACTIVE_WORKSPACE_ID);
+        const nameVal = await AsyncStorage.getItem(CONFIG.STORAGE_KEYS.ACTIVE_WORKSPACE_NAME);
+        if (idVal) {
+          setActiveWorkspaceId(parseInt(idVal, 10));
+        }
+        if (nameVal) {
+          setActiveWorkspaceName(nameVal);
+        }
+      } catch (err) {
+        console.error('Failed to load active workspace from AsyncStorage:', err);
+      }
     };
     loadWorkspace();
   }, []);
 
   const setActiveWorkspace = async (id: number, name: string) => {
-    setActiveWorkspaceId(id);
-    setActiveWorkspaceName(name);
-    // Simpan ke AsyncStorage
+    try {
+      setActiveWorkspaceId(id);
+      setActiveWorkspaceName(name);
+      await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.ACTIVE_WORKSPACE_ID, String(id));
+      await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.ACTIVE_WORKSPACE_NAME, name);
+    } catch (err) {
+      console.error('Failed to save active workspace to AsyncStorage:', err);
+    }
   };
 
   const clearActiveWorkspace = async () => {
-    setActiveWorkspaceId(null);
-    setActiveWorkspaceName(null);
-    // Hapus dari AsyncStorage
+    try {
+      setActiveWorkspaceId(null);
+      setActiveWorkspaceName(null);
+      await AsyncStorage.removeItem(CONFIG.STORAGE_KEYS.ACTIVE_WORKSPACE_ID);
+      await AsyncStorage.removeItem(CONFIG.STORAGE_KEYS.ACTIVE_WORKSPACE_NAME);
+    } catch (err) {
+      console.error('Failed to clear active workspace from AsyncStorage:', err);
+    }
   };
 
   return (

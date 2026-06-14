@@ -20,6 +20,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../hooks/use-auth';
 import { useNotifications } from '../../hooks/use-notifications';
+import { useWorkspace } from '../../hooks/use-workspace';
 import { NotificationProvider } from '../../context/notification-context';
 import {
   LayoutDashboard,
@@ -35,6 +36,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const router = useRouter();
   const { logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const { clearActiveWorkspace } = useWorkspace();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -278,6 +280,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                           setShowLogoutConfirm(false);
                           try {
                             await logout();
+                            await clearActiveWorkspace();
                             router.replace('/login' as any);
                           } catch (e) {
                             console.warn('Logout failed:', e);
