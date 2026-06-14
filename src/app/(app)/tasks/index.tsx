@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, ScrollView, 
-  KeyboardAvoidingView, Platform, Modal, ActivityIndicator
+  KeyboardAvoidingView, Platform, Modal, ActivityIndicator, RefreshControl
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -90,6 +90,7 @@ export default function TasksScreen() {
 
   const [openCategories, setOpenCategories] = useState<string[]>(['Not started', 'In progress', 'Overdue']);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [tasks, setTasks] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -253,6 +254,12 @@ export default function TasksScreen() {
       console.error('[TasksScreen] Error loading courses:', err);
     }
   }, [activeWorkspaceId]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchTasks(), fetchCourses()]);
+    setRefreshing(false);
+  }, [fetchTasks, fetchCourses]);
 
   useFocusEffect(
     useCallback(() => {
@@ -438,7 +445,17 @@ export default function TasksScreen() {
   return (
     <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0, backgroundColor: '#000000' }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#9457FF"
+              colors={["#9457FF"]}
+            />
+          }
+        >
           
           {/* Header Section */}
           <View style={{ width: '100%', marginBottom: 24, gap: 8 }}>

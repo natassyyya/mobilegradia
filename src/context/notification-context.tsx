@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import { useAuth } from '../hooks/use-auth';
+import * as notificationsApi from '../api/notificationsApi';
 
 export interface Notification {
   id: string;
@@ -14,80 +16,106 @@ export interface Notification {
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  deleteNotification: (id: string) => void;
-  deleteAllNotifications: () => void;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  deleteAllNotifications: () => Promise<void>;
+  refreshNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      taskName: 'Tugas Mandiri 3 - UI/UX Design',
-      courseName: 'Mobile Application Development',
-      priority: 'High',
-      timeLeft: '1 hour left',
-      createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 mins ago
-      read: false
-    },
-    {
-      id: '2',
-      taskName: 'Laporan Praktikum 2 - Relational DB',
-      courseName: 'Basis Data',
-      priority: 'Medium',
-      timeLeft: '23 hours left',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      read: false
-    },
-    {
-      id: '3',
-      taskName: 'Quiz 1 - Subnetting & IP Routing',
-      courseName: 'Computer Networks',
-      priority: 'Low',
-      timeLeft: '1 hour left',
-      createdAt: new Date(Date.now() - 28 * 60 * 60 * 1000).toISOString(), // 28 hours ago (yesterday)
-      read: true
-    },
-    {
-      id: '4',
-      taskName: 'Proyek Akhir Semester - API Integration',
-      courseName: 'Web Programming',
-      priority: 'High',
-      timeLeft: '23 hours left',
-      createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(), // 30 hours ago (yesterday)
-      read: false
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const mapDBToFrontend = (dbNotif: notificationsApi.DBNotification): Notification => {
+    return {
+      id: String(dbNotif.id_notification),
+      taskName: dbNotif.task?.title || "Unknown Task",
+      courseName: dbNotif.task?.course?.name || "Unknown Course",
+      priority: (dbNotif.task?.priority as 'High' | 'Medium' | 'Low') || 'Medium',
+      timeLeft: dbNotif.time_left === 1 ? '1 hour left' : `${dbNotif.time_left} hours left`,
+      createdAt: dbNotif.created_at,
+      read: dbNotif.is_read,
+      deleted: dbNotif.is_deleted || false
+    };
+  };
+
+  const loadNotifications = async () => {
+    if (!user?.id_user) {
+      setNotifications([]);
+      return;
     }
-  ]);
+    try {
+      const data = await notificationsApi.getNotifications(user.id_user);
+      setNotifications(data.map(mapDBToFrontend));
+    } catch (e) {
+      console.error("[NotificationProvider] Failed to load notifications:", e);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, [user?.id_user]);
 
   const unreadCount = useMemo(() => {
     return notifications.filter(n => !n.read && !n.deleted).length;
   }, [notifications]);
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
+    // Optimistic UI update
     setNotifications(prev => 
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
+    try {
+      await notificationsApi.markNotificationAsRead(Number(id));
+    } catch (e) {
+      console.error("[NotificationProvider] markAsRead failed:", e);
+      // Revert if failed
+      loadNotifications();
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    if (!user?.id_user) return;
+    // Optimistic UI update
     setNotifications(prev => 
       prev.map(n => ({ ...n, read: true }))
     );
+    try {
+      await notificationsApi.markAllNotificationsAsRead(user.id_user);
+    } catch (e) {
+      console.error("[NotificationProvider] markAllAsRead failed:", e);
+      loadNotifications();
+    }
   };
 
-  const deleteNotification = (id: string) => {
+  const deleteNotification = async (id: string) => {
+    // Optimistic UI update
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, deleted: true } : n)
     );
+    try {
+      await notificationsApi.deleteNotification(Number(id));
+    } catch (e) {
+      console.error("[NotificationProvider] deleteNotification failed:", e);
+      loadNotifications();
+    }
   };
 
-  const deleteAllNotifications = () => {
+  const deleteAllNotifications = async () => {
+    if (!user?.id_user) return;
+    // Optimistic UI update
     setNotifications(prev =>
       prev.map(n => ({ ...n, deleted: true }))
     );
+    try {
+      await notificationsApi.deleteAllNotifications(user.id_user);
+    } catch (e) {
+      console.error("[NotificationProvider] deleteAllNotifications failed:", e);
+      loadNotifications();
+    }
   };
 
   return (
@@ -97,7 +125,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       markAsRead, 
       markAllAsRead, 
       deleteNotification, 
-      deleteAllNotifications 
+      deleteAllNotifications,
+      refreshNotifications: loadNotifications
     }}>
       {children}
     </NotificationContext.Provider>
