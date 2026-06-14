@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://aufnfbyzpsicgwepyhxx.supabase.co';
 // Gunakan service role key jika ada agar server dapat melewati batasan RLS
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
                     process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || 
-                    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+                    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1Zm5mYnl6cHNpY2d3ZXB5aHh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyNzUzMjgsImV4cCI6MjA3Mzg1MTMyOH0.W4Ov5qT71seyn0FK8jUN7_9TtKWrXOk5pMBpX0SN0Ds'; // fallback anon key
 
 const serverSupabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
