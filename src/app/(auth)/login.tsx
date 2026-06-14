@@ -4,6 +4,7 @@ import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../components/layout/screen-container';
 import { useAuth } from '../../hooks/use-auth';
+import { useWorkspace } from '../../hooks/use-workspace';
 import { login, getGoogleAuthUrl, googleCallback } from '../../api/auth';
 import { WebView } from 'react-native-webview';
 
@@ -14,15 +15,20 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login: saveSession, user } = useAuth();
+  const { activeWorkspaceId } = useWorkspace();
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [googleAuthUrl, setGoogleAuthUrl] = useState('');
 
   // Auto-redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      router.replace('/workspaces' as any);
+      if (activeWorkspaceId) {
+        router.replace('/(app)/dashboard' as any);
+      } else {
+        router.replace('/workspaces' as any);
+      }
     }
-  }, [user]);
+  }, [user, activeWorkspaceId]);
 
   const handleLogin = async () => {
     setErrorMsg('');
@@ -41,7 +47,11 @@ export default function LoginScreen() {
           email: res.email || email,
         };
         await saveSession(userData);
-        router.replace('/workspaces' as any);
+        if (activeWorkspaceId) {
+          router.replace('/(app)/dashboard' as any);
+        } else {
+          router.replace('/workspaces' as any);
+        }
       } else {
         setErrorMsg(res.error || 'Login failed. Please check your credentials.');
       }
@@ -109,7 +119,11 @@ export default function LoginScreen() {
           email: callbackRes.email || '',
         };
         await saveSession(userData);
-        router.replace('/workspaces' as any);
+        if (activeWorkspaceId) {
+          router.replace('/(app)/dashboard' as any);
+        } else {
+          router.replace('/workspaces' as any);
+        }
       } else {
         throw new Error(callbackRes?.error || 'Gagal masuk menggunakan Google callback.');
       }
