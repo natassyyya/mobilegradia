@@ -235,17 +235,44 @@ export default function DashboardScreen() {
                         {stats.dueToday.map((task, idx) => {
                           const b = getBadgeStyle(task.priority);
                           return (
-                            /* Web: flex gap-3 rounded-[12px] p-3 bg-background-secondary items-center */
-                            <View key={task.id_task ?? idx} style={s.taskRow}>
-                              {/* ri-article-line → FileText lucide */}
-                              <FileText size={28} color="#9457FF" />
-                              <View style={{ flex: 1, gap: 4 }}>
-                                <Text style={s.taskTitle}>{task.title}</Text>
-                                <Text style={s.taskCourse}>{task.relatedCourse ?? 'No course'}</Text>
-                                {/* Badge */}
-                                <View style={[s.badge, { backgroundColor: b.bg }]}>
-                                  <Text style={[s.badgeTxt, { color: b.text }]}>{task.priority ?? 'Normal'}</Text>
+                            <View key={task.id_task ?? idx} style={[s.taskRow, { alignItems: 'center' }]}>
+                              {/* Left Side: Sleek circular FileText icon badge */}
+                              <View style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 8,
+                                backgroundColor: 'rgba(148, 87, 255, 0.12)',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderWidth: 1,
+                                borderColor: 'rgba(148, 87, 255, 0.2)',
+                              }}>
+                                <FileText size={18} color="#9457FF" />
+                              </View>
+
+                              {/* Right Side: Title + Course + Priority */}
+                              <View style={{ flex: 1, gap: 2 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Text style={[s.taskTitle, { flex: 1, marginRight: 8 }]} >
+                                    {task.title}
+                                  </Text>
+                                  {/* Compact Priority Badge */}
+                                  <View style={{
+                                    backgroundColor: b.bg,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 2,
+                                    borderRadius: 6,
+                                    borderWidth: 1,
+                                    borderColor: b.text + '30',
+                                  }}>
+                                    <Text style={{ fontFamily: 'Inter-SemiBold', fontSize: 10, color: b.text }}>
+                                      {task.priority ?? 'Normal'}
+                                    </Text>
+                                  </View>
                                 </View>
+                                <Text style={[s.taskCourse, { marginBottom: 0, marginTop: 8 }]} >
+                                  {task.relatedCourse ?? 'No course'}
+                                </Text>
                               </View>
                             </View>
                           );
