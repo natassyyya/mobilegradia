@@ -11,7 +11,7 @@
  *
  * Desain tab bar mengacu pada Modern Floating, Rounded, Glassmorphism Dock.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, useRouter, Redirect } from 'expo-router';
 import { 
   View, StyleSheet, Platform, TouchableOpacity, Alert, 
@@ -22,6 +22,7 @@ import { useAuth } from '../../hooks/use-auth';
 import { useNotifications } from '../../hooks/use-notifications';
 import { useWorkspace } from '../../hooks/use-workspace';
 import { NotificationProvider } from '../../context/notification-context';
+import { registerForPushNotificationsAsync } from '../../services/pushNotification';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -320,6 +321,12 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 /* ════════════════════════════════════════════════════════════ */
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (user?.id_user) {
+      registerForPushNotificationsAsync(user.id_user);
+    }
+  }, [user?.id_user]);
 
   if (isLoading) {
     return (

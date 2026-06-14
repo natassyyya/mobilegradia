@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  ActivityIndicator, StyleSheet,
+  ActivityIndicator, StyleSheet, RefreshControl,
 } from 'react-native';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,19 +33,23 @@ const BADGE_COLORS: Record<string, string> = {
 const getBadgeColor = (task: any): string => {
   const st = task.status?.toLowerCase() ?? '';
   const pr = task.priority?.toLowerCase() ?? '';
-  const isOverdue = task.deadline ? new Date(task.deadline) < new Date() : false;
+  const isOverdue = st === 'overdue' || (task.deadline ? new Date(task.deadline) < new Date() : false);
 
   if (['completed', 'done', 'selesai'].includes(st)) return BADGE_COLORS.Green;
+
+  if (isOverdue) {
+    if (pr === 'high') return BADGE_COLORS.Red;
+    if (pr === 'medium') return BADGE_COLORS.Orange;
+    return BADGE_COLORS.Red; // Default overdue color
+  }
 
   if (pr === 'high') {
     if (['in progress', 'ongoing', 'progress'].includes(st)) return BADGE_COLORS.Purple;
     if (['not started', 'todo', 'backlog'].includes(st))     return BADGE_COLORS.Pink;
-    if (isOverdue) return BADGE_COLORS.Red;
   }
   if (pr === 'medium') {
     if (['in progress', 'ongoing', 'progress'].includes(st)) return BADGE_COLORS.Blue;
     if (['not started', 'todo', 'backlog'].includes(st))     return BADGE_COLORS.Yellow;
-    if (isOverdue) return BADGE_COLORS.Orange;
   }
   if (pr === 'low') {
     if (['in progress', 'ongoing', 'progress'].includes(st)) return BADGE_COLORS.Cyan;
@@ -83,6 +87,7 @@ export default function CalendarScreen() {
 
   const [tasks,        setTasks]        = useState<any[]>([]);
   const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
   const [searchTerm,   setSearchTerm]   = useState('');
   const [currentDate,  setCurrentDate]  = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
@@ -100,6 +105,12 @@ export default function CalendarScreen() {
       setLoading(false);
     }
   }, [activeWorkspaceId]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchTasks();
+    setRefreshing(false);
+  }, [fetchTasks]);
 
   useFocusEffect(
     useCallback(() => {
@@ -147,6 +158,14 @@ export default function CalendarScreen() {
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100, gap: 28 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#9457FF"
+            colors={["#9457FF"]}
+          />
+        }
       >
 
         {/* ── HEADER ── */}

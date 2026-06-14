@@ -130,9 +130,27 @@ export async function login(text: string, password: string) {
               if (updatedUser) {
                 dbUser = updatedUser;
               }
+            } else if (signUpErr) {
+              // Sign-up fallback: if user already exists in auth, try signing in to get their uid
+              console.log("[login] Background signup failed, trying signin fallback:", signUpErr.message);
+              const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+              });
+              if (!signInErr && signInData.user) {
+                const { data: updatedUser } = await supabase
+                  .from('users')
+                  .update({ supabase_uid: signInData.user.id, is_verified: true })
+                  .eq('id_user', dbUser.id_user)
+                  .select()
+                  .single();
+                if (updatedUser) {
+                  dbUser = updatedUser;
+                }
+              }
             }
           } catch (e) {
-            console.warn("Background Supabase signup failed:", e);
+            console.warn("Background Supabase signup/signin failed:", e);
           }
         } else {
           // If they have a supabase_uid, try to sign in via Supabase Auth to establish the session
@@ -379,7 +397,7 @@ export async function getGoogleAuthUrl(customRedirectUrl?: string) {
   try {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://aufnfbyzpsicgwepyhxx.supabase.co';
     const redirectUrl = customRedirectUrl || "https://gradia-three.vercel.app/auth/login";
-    const url = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+    const url = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}&prompt=select_account`;
     return { url };
   } catch (err: any) {
     return { error: err.message };

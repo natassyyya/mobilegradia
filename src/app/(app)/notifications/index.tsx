@@ -1,5 +1,5 @@
-import React, { useMemo, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Animated, PanResponder, Dimensions } from 'react-native';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Animated, PanResponder, Dimensions, RefreshControl } from 'react-native';
 import { ScreenContainer } from '../../../components/layout/screen-container';
 import { useNotifications } from '../../../hooks/use-notifications';
 import { Bell, CheckCheck, Clock, Trash2 } from 'lucide-react-native';
@@ -112,8 +112,17 @@ export default function NotificationsScreen() {
     markAllAsRead, 
     unreadCount, 
     deleteNotification, 
-    deleteAllNotifications 
+    deleteAllNotifications,
+    refreshNotifications
   } = useNotifications();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshNotifications();
+    setRefreshing(false);
+  }, [refreshNotifications]);
 
   const formatDateHeader = (isoString: string) => {
     const date = new Date(isoString);
@@ -159,7 +168,18 @@ export default function NotificationsScreen() {
 
   return (
     <ScreenContainer useSafeArea={true} style={{ paddingHorizontal: 0, backgroundColor: '#000' }}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#9457FF"
+            colors={["#9457FF"]}
+          />
+        }
+      >
         
         {/* Header Title Section */}
         <View style={{ marginBottom: 8 }}>
