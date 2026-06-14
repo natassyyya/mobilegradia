@@ -18,13 +18,13 @@ export const Alert: React.FC<AlertProps> = ({
   const getColors = () => {
     switch (variant) {
       case 'success':
-        return { bg: colors.greenBg, text: colors.green, border: colors.green };
+        return { bg: '#14532D', text: '#F0FDF4', border: '#22C55E' };
       case 'destructive':
-        return { bg: colors.redBg, text: colors.red, border: colors.red };
+        return { bg: '#7F1D1D', text: '#FEF2F2', border: '#EF4444' };
       case 'warning':
-        return { bg: colors.yellowBg, text: colors.yellow, border: colors.yellow };
+        return { bg: '#78350F', text: '#FEFCE8', border: '#EAB308' };
       default:
-        return { bg: colors.cyanBg, text: colors.cyan, border: colors.cyan };
+        return { bg: '#0C4A6E', text: '#F0F9FF', border: '#0EA5E9' };
     }
   };
 
@@ -63,6 +63,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginVertical: 8,
     width: '100%',
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    // Elevation for Android
+    elevation: 8,
   },
   content: {
     flex: 1,
@@ -73,7 +80,7 @@ const styles = StyleSheet.create({
   },
   desc: {
     fontSize: 13,
-    color: '#D4D4D8',
+    color: '#E4E4E7',
     marginTop: 2,
   },
   closeBtn: {

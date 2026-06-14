@@ -5,7 +5,7 @@
  *   Web/src/pages/Calendar/components/Calendar.jsx
  *   Web/src/pages/Calendar/components/Card.jsx
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   ActivityIndicator, StyleSheet,
@@ -14,7 +14,7 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '../../../components/layout/screen-container';
 import { useWorkspace } from '../../../hooks/use-workspace';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { getTasks } from '../../../api/tasksApi';
 
 /* ─── Badge colour map (persis seperti Calendar.jsx) ──────── */
@@ -88,21 +88,24 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
 
   /* fetch tasks */
-  useEffect(() => {
-    const fetch_ = async () => {
-      if (!activeWorkspaceId) { setLoading(false); return; }
-      try {
-        const data = await getTasks(activeWorkspaceId);
-        const colored = (data ?? []).map((t: any) => ({ ...t, color: getBadgeColor(t) }));
-        setTasks(colored);
-      } catch (e) {
-        console.error('[Calendar] fetch tasks:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch_();
+  const fetchTasks = useCallback(async () => {
+    if (!activeWorkspaceId) { setLoading(false); return; }
+    try {
+      const data = await getTasks(activeWorkspaceId);
+      const colored = (data ?? []).map((t: any) => ({ ...t, color: getBadgeColor(t) }));
+      setTasks(colored);
+    } catch (e) {
+      console.error('[Calendar] fetch tasks:', e);
+    } finally {
+      setLoading(false);
+    }
   }, [activeWorkspaceId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks();
+    }, [fetchTasks])
+  );
 
   /* calendar math */
   const { daysInMonth, startingDayOfWeek, year, month } = useMemo(() => {

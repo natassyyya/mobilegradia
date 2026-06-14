@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, ActivityIndicator, Linking, StyleSheet, Modal } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Plus, Building2, GraduationCap, Phone, Calendar, Clock, Link2, Trash2, X, Check, AlertTriangle, Hash, ExternalLink } from 'lucide-react-native';
 import { ScreenContainer } from '../../../components/layout/screen-container';
@@ -50,10 +50,35 @@ export default function CoursesScreen() {
   const [formSks, setFormSks] = useState<number>(1);
   const [formLink, setFormLink] = useState('');
 
+  // Time Picker State
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end'>('start');
+  const [tempHour, setTempHour] = useState('08');
+  const [tempMinute, setTempMinute] = useState('00');
+
+  const openTimePicker = (target: 'start' | 'end') => {
+    const currentTime = target === 'start' ? formStart : formEnd;
+    const parts = (currentTime || '08:00').split(':');
+    setTempHour(parts[0] || '08');
+    setTempMinute(parts[1] || '00');
+    setTimePickerTarget(target);
+    setTimePickerVisible(true);
+  };
+
+  const confirmTimeSelection = () => {
+    const formattedTime = `${tempHour}:${tempMinute}`;
+    if (timePickerTarget === 'start') {
+      setFormStart(formattedTime);
+    } else {
+      setFormEnd(formattedTime);
+    }
+    setTimePickerVisible(false);
+  };
+
   const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   // Fetch Courses
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     if (!activeWorkspaceId) {
       setLoading(false);
       return;
@@ -76,11 +101,13 @@ export default function CoursesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeWorkspaceId, showAlert]);
 
-  useEffect(() => {
-    fetchCourses();
-  }, [activeWorkspaceId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchCourses();
+    }, [fetchCourses])
+  );
 
   // Format Helper: HH:MM:SS -> HH:MM
   const formatTime = (time: string) => {
@@ -391,8 +418,8 @@ export default function CoursesScreen() {
                           );
                         })
                       ) : (
-                        <View className="w-full h-20 items-center justify-center rounded-lg border border-[#2a2a2a] bg-[#0f0f0f]/40 p-4">
-                          <Text className="text-neutral-600 text-sm font-inter">No courses</Text>
+                        <View className="w-full h-20 items-center justify-center rounded-lg border border-white/5 bg-[#141414] p-4">
+                          <Text className="text-[#A3A3A3] text-sm font-inter">No courses</Text>
                         </View>
                       )}
                     </View>
@@ -445,13 +472,13 @@ export default function CoursesScreen() {
                     onChangeText={setFormName}
                     multiline
                     numberOfLines={2}
-                    className="w-full bg-[#1b1b1b] border border-white/10 rounded-lg p-3 text-white font-inter text-base"
-                    style={{ minHeight: 60, textAlignVertical: 'top' }}
+                    className="w-full bg-[#1b1b1b] rounded-lg p-3 text-white font-inter text-base"
+                    style={{ minHeight: 60, textAlignVertical: 'top', outlineStyle: 'none' } as any}
                   />
                 </View>
 
                 {/* Alias Input */}
-                <View className="flex-row items-center bg-[#1b1b1b] border border-white/10 rounded-lg px-3 py-2">
+                <View className="flex-row items-center bg-[#1b1b1b] rounded-lg px-3 py-2">
                   <Hash size={16} color="#A3A3A3" className="mr-3" />
                   <View className="flex-1">
                     <Text className="text-[10px] text-[#A3A3A3] uppercase font-inter">Alias</Text>
@@ -461,12 +488,13 @@ export default function CoursesScreen() {
                       value={formAlias}
                       onChangeText={setFormAlias}
                       className="text-white font-inter text-sm mt-0.5"
+                      style={{ outlineStyle: 'none' } as any}
                     />
                   </View>
                 </View>
 
                 {/* Lecturer Input */}
-                <View className="flex-row items-center bg-[#1b1b1b] border border-white/10 rounded-lg px-3 py-2">
+                <View className="flex-row items-center bg-[#1b1b1b] rounded-lg px-3 py-2">
                   <GraduationCap size={16} color="#A3A3A3" className="mr-3" />
                   <View className="flex-1">
                     <Text className="text-[10px] text-[#A3A3A3] uppercase font-inter">Lecturer *</Text>
@@ -476,12 +504,13 @@ export default function CoursesScreen() {
                       value={formLecturer}
                       onChangeText={setFormLecturer}
                       className="text-white font-inter text-sm mt-0.5"
+                      style={{ outlineStyle: 'none' } as any}
                     />
                   </View>
                 </View>
 
                 {/* Phone Input with WhatsApp Link */}
-                <View className="flex-row items-center bg-[#1b1b1b] border border-white/10 rounded-lg px-3 py-2 relative">
+                <View className="flex-row items-center bg-[#1b1b1b] rounded-lg px-3 py-2 relative">
                   <Phone size={16} color="#A3A3A3" className="mr-3" />
                   <View className="flex-1 pr-10">
                     <Text className="text-[10px] text-[#A3A3A3] uppercase font-inter">Phone</Text>
@@ -492,6 +521,7 @@ export default function CoursesScreen() {
                       onChangeText={setFormPhone}
                       keyboardType="phone-pad"
                       className="text-white font-inter text-sm mt-0.5"
+                      style={{ outlineStyle: 'none' } as any}
                     />
                   </View>
                   {formPhone.trim() !== '' && (
@@ -509,7 +539,7 @@ export default function CoursesScreen() {
                   <Text className="text-xs font-semibold text-[#A3A3A3] uppercase font-inter">
                     Day *
                   </Text>
-                  <View className="flex-row justify-between bg-[#1b1b1b] p-1 border border-white/10 rounded-lg">
+                  <View className="flex-row justify-between bg-[#1b1b1b] p-1 rounded-lg">
                     {dayOrder.map((day) => {
                       const isSelected = formDay === day;
                       const shortDay = day.slice(0, 3);
@@ -535,37 +565,37 @@ export default function CoursesScreen() {
 
                 {/* Start / End Time Inputs */}
                 <View className="flex-row gap-3">
-                  <View className="flex-1 flex-row items-center bg-[#1b1b1b] border border-white/10 rounded-lg px-3 py-2">
+                  <TouchableOpacity
+                    onPress={() => openTimePicker('start')}
+                    activeOpacity={0.8}
+                    className="flex-1 flex-row items-center bg-[#1b1b1b] rounded-lg px-3 py-2"
+                  >
                     <Clock size={16} color="#A3A3A3" className="mr-3" />
                     <View className="flex-1">
                       <Text className="text-[10px] text-[#A3A3A3] uppercase font-inter">Start *</Text>
-                      <TextInput
-                        placeholder="08:00"
-                        placeholderTextColor="#666"
-                        value={formStart}
-                        onChangeText={setFormStart}
-                        className="text-white font-inter text-sm mt-0.5"
-                      />
+                      <Text className="text-white font-inter text-sm mt-0.5">
+                        {formStart}
+                      </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
 
-                  <View className="flex-1 flex-row items-center bg-[#1b1b1b] border border-white/10 rounded-lg px-3 py-2">
+                  <TouchableOpacity
+                    onPress={() => openTimePicker('end')}
+                    activeOpacity={0.8}
+                    className="flex-1 flex-row items-center bg-[#1b1b1b] rounded-lg px-3 py-2"
+                  >
                     <Clock size={16} color="#A3A3A3" className="mr-3" />
                     <View className="flex-1">
                       <Text className="text-[10px] text-[#A3A3A3] uppercase font-inter">End *</Text>
-                      <TextInput
-                        placeholder="10:00"
-                        placeholderTextColor="#666"
-                        value={formEnd}
-                        onChangeText={setFormEnd}
-                        className="text-white font-inter text-sm mt-0.5"
-                      />
+                      <Text className="text-white font-inter text-sm mt-0.5">
+                        {formEnd}
+                      </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Room Input */}
-                <View className="flex-row items-center bg-[#1b1b1b] border border-white/10 rounded-lg px-3 py-2">
+                <View className="flex-row items-center bg-[#1b1b1b] rounded-lg px-3 py-2">
                   <Building2 size={16} color="#A3A3A3" className="mr-3" />
                   <View className="flex-1">
                     <Text className="text-[10px] text-[#A3A3A3] uppercase font-inter">Room</Text>
@@ -575,6 +605,7 @@ export default function CoursesScreen() {
                       value={formRoom}
                       onChangeText={setFormRoom}
                       className="text-white font-inter text-sm mt-0.5"
+                      style={{ outlineStyle: 'none' } as any}
                     />
                   </View>
                 </View>
@@ -588,7 +619,7 @@ export default function CoursesScreen() {
                     {[1, 2, 3].map((num) => {
                       const isSelected = formSks === num;
                       let highlightBg = 'bg-transparent';
-                      let highlightBorder = 'border-white/10';
+                      let highlightBorder = 'border-transparent';
                       let activeText = 'text-[#A3A3A3]';
 
                       if (isSelected) {
@@ -622,7 +653,7 @@ export default function CoursesScreen() {
                 </View>
 
                 {/* Link Input with URL Opener */}
-                <View className="flex-row items-center bg-[#1b1b1b] border border-white/10 rounded-lg px-3 py-2 relative">
+                <View className="flex-row items-center bg-[#1b1b1b] rounded-lg px-3 py-2 relative">
                   <Link2 size={16} color="#A3A3A3" className="mr-3" />
                   <View className="flex-1 pr-10">
                     <Text className="text-[10px] text-[#A3A3A3] uppercase font-inter">Link</Text>
@@ -632,6 +663,7 @@ export default function CoursesScreen() {
                       value={formLink}
                       onChangeText={setFormLink}
                       className="text-white font-inter text-sm mt-0.5"
+                      style={{ outlineStyle: 'none' } as any}
                     />
                   </View>
                   {formLink.trim() !== '' && (
@@ -691,6 +723,101 @@ export default function CoursesScreen() {
                     </Text>
                   )}
                 </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Time Picker Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={timePickerVisible}
+        onRequestClose={() => setTimePickerVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', zIndex: 999 }}>
+          <View style={{ width: '85%', maxWidth: 320, backgroundColor: '#141414', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 16, padding: 20 }}>
+            {/* Modal Title */}
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: 'white', fontFamily: 'Montserrat-Bold', marginBottom: 15, textAlign: 'center' }}>
+              Select {timePickerTarget === 'start' ? 'Start Time' : 'End Time'}
+            </Text>
+
+            {/* Selection Column Headers */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 5 }}>
+              <Text style={{ color: '#A3A3A3', fontSize: 12, fontWeight: '600' }}>Hour</Text>
+              <Text style={{ color: '#A3A3A3', fontSize: 12, fontWeight: '600' }}>Minute</Text>
+            </View>
+
+            {/* Columns Row */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', height: 160, marginBottom: 20 }}>
+              {/* Hour ScrollView */}
+              <ScrollView style={{ flex: 1, marginRight: 5 }} showsVerticalScrollIndicator={false}>
+                {Array.from({ length: 24 }, (_, i) => {
+                  const hr = i.toString().padStart(2, '0');
+                  const isSelected = tempHour === hr;
+                  return (
+                    <TouchableOpacity
+                      key={hr}
+                      onPress={() => setTempHour(hr)}
+                      style={{
+                        paddingVertical: 8,
+                        alignItems: 'center',
+                        backgroundColor: isSelected ? '#9457FF' : 'transparent',
+                        borderRadius: 6,
+                        marginVertical: 2
+                      }}
+                    >
+                      <Text style={{ color: isSelected ? 'white' : '#A3A3A3', fontWeight: isSelected ? 'bold' : 'normal' }}>
+                        {hr}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Divider */}
+              <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.05)', height: '100%' }} />
+
+              {/* Minute ScrollView */}
+              <ScrollView style={{ flex: 1, marginLeft: 5 }} showsVerticalScrollIndicator={false}>
+                {Array.from({ length: 60 }, (_, i) => {
+                  const min = i.toString().padStart(2, '0');
+                  const isSelected = tempMinute === min;
+                  return (
+                    <TouchableOpacity
+                      key={min}
+                      onPress={() => setTempMinute(min)}
+                      style={{
+                        paddingVertical: 8,
+                        alignItems: 'center',
+                        backgroundColor: isSelected ? '#9457FF' : 'transparent',
+                        borderRadius: 6,
+                        marginVertical: 2
+                      }}
+                    >
+                      <Text style={{ color: isSelected ? 'white' : '#A3A3A3', fontWeight: isSelected ? 'bold' : 'normal' }}>
+                        {min}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Buttons Footer */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => setTimePickerVisible(false)}
+                style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
+              >
+                <Text style={{ color: 'white', fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmTimeSelection}
+                style={{ flex: 1, backgroundColor: '#9457FF', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}
+              >
+                <Text style={{ color: 'white', fontWeight: '600' }}>Confirm</Text>
               </TouchableOpacity>
             </View>
           </View>

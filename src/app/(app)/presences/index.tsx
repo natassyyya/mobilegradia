@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, Modal, ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import {
   Search, ChevronDown, X, Check, Menu,
   ArrowRightCircle, Calendar, Clock, MapPin, Trash2, LogOut
@@ -65,11 +66,21 @@ export default function PresencesScreen() {
           hour: "2-digit",
           minute: "2-digit",
         });
+
+        // Normalize status string to Title Case to fix case-sensitivity bugs from DB records
+        let normalizedStatus = item.status || 'Present';
+        if (normalizedStatus.toLowerCase() === 'present') {
+          normalizedStatus = 'Present';
+        } else if (normalizedStatus.toLowerCase() === 'absent') {
+          normalizedStatus = 'Absent';
+        }
+
         return {
           ...item,
           id: item.id_presence,
           date,
           time,
+          status: normalizedStatus,
           course: item.course_name,
           room: item.course_room,
           sks: item.course_sks,
@@ -91,9 +102,11 @@ export default function PresencesScreen() {
     }
   }, [activeWorkspaceId, showAlert]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   // Compute stats
   const totalPresence = useMemo(() => presences.filter((p) => p.status === 'Present').length, [presences]);
