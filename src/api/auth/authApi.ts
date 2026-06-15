@@ -1,3 +1,20 @@
+// Polyfill for crypto.getRandomValues in React Native / Expo to prevent bcryptjs error
+if (typeof global === 'object' && (!global.crypto || !global.crypto.getRandomValues)) {
+  const cryptoPolyfill = {
+    getRandomValues: function (array: any) {
+      for (let i = 0; i < array.length; i++) {
+        array[i] = Math.floor(Math.random() * 256);
+      }
+      return array;
+    }
+  };
+  if (!global.crypto) {
+    (global as any).crypto = cryptoPolyfill;
+  } else {
+    (global as any).crypto.getRandomValues = cryptoPolyfill.getRandomValues;
+  }
+}
+
 import { supabase } from '../../services/supabase';
 import bcrypt from 'bcryptjs';
 
