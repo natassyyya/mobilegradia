@@ -46,7 +46,19 @@ async function handleCron(): Promise<Response> {
     // 2. Ambil semua tugas aktif (bukan Completed dan bukan Overdue) yang memiliki deadline
     const { data: tasks, error: tasksError } = await serverSupabase
       .from('task')
-      .select('id_task, title, deadline, status')
+      .select(`
+        id_task, 
+        title, 
+        deadline, 
+        status,
+        course:id_course (
+          id_courses,
+          workspace:id_workspace (
+            id_workspace,
+            id_user
+          )
+        )
+      `)
       .neq('status', 'Completed')
       .neq('status', 'Overdue')
       .not('deadline', 'is', null);
@@ -134,6 +146,40 @@ async function handleCron(): Promise<Response> {
           timeLeft: targetTimeLeft
         });
         console.log(`[Cron Job] Notification (time_left = ${targetTimeLeft}) created for task: "${task.title}"`);
+
+        // Send Push Notification if user has a push token
+        const id_user = (task as any).course?.workspace?.id_user;
+        if (id_user) {
+          try {
+            const { data: userRecord } = await serverSupabase
+              .from('users')
+              .select('expo_push_token')
+              .eq('id_user', id_user)
+              .maybeSingle();
+
+            if (userRecord?.expo_push_token) {
+              const pushResponse = await fetch("https://exp.host/--/api/v2/push/send", {
+                method: "POST",
+                headers: {
+                  "Accept": "application/json",
+                  "Accept-encoding": "gzip, deflate",
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  to: userRecord.expo_push_token,
+                  sound: "default",
+                  title: `Task Alert: ${task.title}`,
+                  body: `Your task is due in ${targetTimeLeft} hours!`,
+                  data: { id_task: task.id_task },
+                }),
+              });
+              const pushResult = await pushResponse.json();
+              console.log(`[Cron Job] Push sent for task ${task.id_task} to user ${id_user}:`, pushResult);
+            }
+          } catch (pushErr: any) {
+            console.error(`[Cron Job] Failed to send push notification for task ${task.id_task}:`, pushErr.message);
+          }
+        }
       }
     }
 
