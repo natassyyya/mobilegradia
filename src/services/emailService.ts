@@ -1,20 +1,17 @@
+import { supabase } from './supabase';
+
 export async function sendEmail(to: string, subject: string, html: string) {
   try {
-    const response = await fetch('/api/send-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ to, subject, html }),
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: { to, subject, html },
     });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to send email');
+    
+    if (error) {
+      throw error;
     }
     return data;
   } catch (err: any) {
-    console.error('[emailService] Error sending email:', err);
+    console.error('[emailService] Error sending email via Supabase Edge Function:', err);
     throw err;
   }
 }
